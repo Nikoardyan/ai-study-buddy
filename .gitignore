@@ -1,0 +1,45 @@
+venv/
+.env
+chroma_db/
+__pycache__/
+*.pyc
+docs/
+
+# Virtual environment
+venv/
+env/
+.venv/
+
+# Environment variables (RAHASIA!)
+.env
+.env.local
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# ChromaDB data (terlalu besar, regenerate dari upload)
+chroma_db/
+
+# Uploaded docs (user upload sendiri)
+docs/*.pdf
+docs/*.docx
+docs/*.txt
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Logs
+*.log
