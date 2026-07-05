@@ -1,25 +1,25 @@
 """
-AI Study Buddy - All-in-One Streamlit (Ready for Cloud Deploy)
-Skip FastAPI - langsung call RAG functions
+AI Study Buddy - Streamlit App
+Premium Modern UI v2.1
 """
+import warnings
+warnings.filterwarnings("ignore")
+
+import logging
+logging.getLogger("streamlit.runtime.scriptrunner").setLevel(logging.ERROR)
+logging.getLogger("streamlit.watcher.local_sources_watcher").setLevel(logging.ERROR)
+
 import streamlit as st
 import os
 import tempfile
 from pathlib import Path
 
-# Import RAG modules
 from src.loader import load_document
-from src.indexer import (
-    index_document,
-    get_collection_stats,
-    detect_subject,
-    collection
-)
+from src.indexer import index_document, get_collection_stats, collection
 from src.generator import generate_answer_streaming
 from src.memory import ChatHistory
 
-
-# ============ PAGE CONFIG ============
+# ─── PAGE CONFIG ───────────────────────────────────────────────────────────────
 st.set_page_config(
     page_title="AI Study Buddy",
     page_icon="🎓",
@@ -27,376 +27,640 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ============ CUSTOM CSS ============
+# ─── STATE MANAGEMENT ──────────────────────────────────────────────────────────
+if "current_page" not in st.session_state:
+    st.session_state.current_page = "Dashboard"
+if "theme_mode" not in st.session_state:
+    st.session_state.theme_mode = "Dark"
+
+def set_page(page):
+    st.session_state.current_page = page
+
+# ─── CSS - PREMIUM DESIGN ──────────────────────────────────────────────────────
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-    * { font-family: 'Inter', sans-serif !important; }
-    .stApp { background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); min-height: 100vh; }
-    #MainMenu, footer, header { visibility: hidden; }
-    .stDeployButton { display: none; }
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
-    /* SIDEBAR */
-    [data-testid="stSidebar"] {
-        background: rgba(255,255,255,0.05) !important;
-        backdrop-filter: blur(20px);
-        border-right: 1px solid rgba(255,255,255,0.1);
-    }
-    [data-testid="stSidebar"] * { color: white !important; }
+*, *::before, *::after {
+    font-family: 'Inter', -apple-system, sans-serif !important;
+    box-sizing: border-box;
+}
 
-    /* HERO */
-    .hero {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-radius: 20px;
-        padding: 40px;
-        margin-bottom: 24px;
-        text-align: center;
-        position: relative;
-        overflow: hidden;
-        box-shadow: 0 20px 60px rgba(102,126,234,0.4);
-    }
-    .hero::before {
-        content: '';
-        position: absolute;
-        top: -50%; left: -50%;
-        width: 200%; height: 200%;
-        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
-        animation: pulse 4s ease-in-out infinite;
-    }
-    @keyframes pulse {
-        0%, 100% { transform: scale(1); opacity: 0.5; }
-        50% { transform: scale(1.1); opacity: 1; }
-    }
-    .hero-title { font-size: 2.8rem; font-weight: 800; color: white; margin: 0; position: relative; z-index: 1; }
-    .hero-sub { font-size: 1rem; color: rgba(255,255,255,0.8); margin-top: 10px; position: relative; z-index: 1; }
+.stApp {
+    background: #05080f;
+    background: radial-gradient(circle at top left, rgba(0, 242, 255, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at bottom right, rgba(112, 0, 255, 0.05) 0%, transparent 40%),
+                #05080f;
+    min-height: 100vh;
+}
 
-    /* STAT CARDS */
-    .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
-    .stat-card {
-        background: rgba(255,255,255,0.08);
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(255,255,255,0.15);
-        border-radius: 16px;
-        padding: 20px;
-        text-align: center;
-    }
-    .stat-number {
-        font-size: 2rem;
-        font-weight: 800;
-        background: linear-gradient(135deg, #667eea, #a78bfa);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }
-    .stat-label {
-        font-size: 0.78rem;
-        color: rgba(255,255,255,0.5);
-        margin-top: 4px;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
+#MainMenu, footer { visibility: hidden; }
+.stDeployButton { display: none !important; }
 
-    /* CHAT */
-    .chat-wrapper {
-        background: rgba(255,255,255,0.04);
-        backdrop-filter: blur(20px);
-        border: 1px solid rgba(255,255,255,0.1);
-        border-radius: 24px;
-        padding: 24px;
-    }
-    [data-testid="stChatMessage"] { background: transparent !important; border: none !important; }
-    [data-testid="stChatMessage"][data-role="user"] .stMarkdown p {
-        background: linear-gradient(135deg, #667eea, #764ba2) !important;
-        border-radius: 18px 18px 4px 18px !important;
-        padding: 12px 18px !important;
-        color: white !important;
-        display: inline-block;
-    }
-    [data-testid="stChatMessage"][data-role="assistant"] .stMarkdown {
-        background: rgba(255,255,255,0.06) !important;
-        border: 1px solid rgba(255,255,255,0.1) !important;
-        border-radius: 18px 18px 18px 4px !important;
-        padding: 14px 18px !important;
-        color: rgba(255,255,255,0.9) !important;
-    }
+header[data-testid="stHeader"] {
+    visibility: hidden !important;
+    height: 0 !important;
+    min-height: 0 !important;
+}
 
-    /* CHAT INPUT */
-    [data-testid="stChatInput"] {
-        background: rgba(15,12,41,0.95) !important;
-        border: 2px solid rgba(102,126,234,0.4) !important;
-        border-radius: 50px !important;
-    }
-    textarea {
-        color: #ffffff !important;
-        -webkit-text-fill-color: #ffffff !important;
-        caret-color: #ffffff !important;
-    }
-    textarea::placeholder {
-        color: rgba(255,255,255,0.5) !important;
-        -webkit-text-fill-color: rgba(255,255,255,0.5) !important;
-    }
-    [data-testid="stChatInput"] button svg { fill: white !important; }
+[data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"],
+[data-testid="stSidebarCollapsedControl"] { display: none !important; }
 
-    /* BUTTONS */
-    .stButton button {
-        background: linear-gradient(135deg, #667eea, #764ba2) !important;
-        color: white !important;
-        border: none !important;
-        border-radius: 10px !important;
-        font-weight: 600 !important;
-    }
+[data-testid="stSidebar"] {
+    width: 280px !important;
+    min-width: 280px !important;
+    background: rgba(13, 19, 34, 0.8) !important;
+    backdrop-filter: blur(24px) !important;
+    -webkit-backdrop-filter: blur(24px) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
 
-    /* FILE UPLOADER */
-    [data-testid="stFileUploader"] {
-        background: rgba(255,255,255,0.04) !important;
-        border: 2px dashed rgba(102,126,234,0.5) !important;
-        border-radius: 12px !important;
-    }
-    [data-testid="stFileUploader"] section { background: transparent !important; }
-    [data-testid="stFileUploader"] * { color: white !important; }
-    [data-testid="stFileUploader"] section button {
-        background: rgba(255,255,255,0.1) !important;
-        color: white !important;
-        border: 1px solid rgba(255,255,255,0.2) !important;
-    }
+/* Sidebar Brand */
+.sb-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 20px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    margin-bottom: 16px;
+}
+.sb-brand-icon {
+    width: 40px;
+    height: 40px;
+    background: rgba(0, 242, 255, 0.1);
+    border: 1px solid rgba(0, 242, 255, 0.3);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    box-shadow: 0 0 15px rgba(0, 242, 255, 0.2);
+}
+.sb-brand-text {
+    flex: 1;
+}
+.sb-name {
+    font-family: 'Geist', sans-serif !important;
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #e1fdff;
+    line-height: 1.2;
+}
+.sb-powered {
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 0.65rem;
+    color: #b9cacb !important;
+    letter-spacing: 0.05em;
+}
 
-    .doc-badge {
-        display: inline-block;
-        padding: 2px 8px;
-        border-radius: 99px;
-        font-size: 0.7rem;
-        font-weight: 700;
-        background: linear-gradient(135deg, #667eea, #764ba2);
-        color: white;
-    }
-    hr { border-color: rgba(255,255,255,0.1) !important; margin: 16px 0 !important; }
-    .stMarkdown, p, span, label { color: rgba(255,255,255,0.85) !important; }
-    h1, h2, h3, h4 { color: white !important; }
-    [data-testid="stMetricValue"] { color: #a78bfa !important; font-weight: 800 !important; }
-    [data-testid="stMetric"] {
-        background: rgba(255,255,255,0.06) !important;
-        border: 1px solid rgba(255,255,255,0.1) !important;
-        border-radius: 12px !important;
-        padding: 12px !important;
-    }
+/* Brain Mode Button */
+.btn-brain {
+    width: 100%;
+    background: linear-gradient(135deg, #00f2ff 0%, #7000ff 100%);
+    color: #fff !important;
+    border: none;
+    border-radius: 10px;
+    padding: 12px;
+    font-weight: 700;
+    font-family: 'Geist', sans-serif !important;
+    letter-spacing: 0.5px;
+    margin-bottom: 16px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(112, 0, 255, 0.3);
+}
+
+/* Custom st.button styling for Sidebar nav */
+[data-testid="stSidebar"] .stButton > button {
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    color: #dde2f8 !important;
+    justify-content: flex-start !important;
+    padding: 10px 16px !important;
+    border-radius: 8px !important;
+    box-shadow: none !important;
+    font-weight: 500 !important;
+    font-family: 'Inter', sans-serif !important;
+}
+[data-testid="stSidebar"] .stButton > button:hover {
+    background: rgba(255, 255, 255, 0.05) !important;
+}
+[data-testid="stSidebar"] .stButton > button p {
+    font-size: 0.95rem !important;
+}
+
+/* Hero Section */
+.main-hdr {
+    background: rgba(13, 19, 34, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 40px 40px;
+    text-align: center;
+    margin-bottom: 24px;
+    backdrop-filter: blur(24px);
+    position: relative;
+    overflow: hidden;
+}
+.hero-icon-wrapper {
+    display: inline-flex;
+    width: 64px;
+    height: 64px;
+    background: rgba(0, 242, 255, 0.05);
+    border: 1px solid rgba(0, 242, 255, 0.2);
+    border-radius: 16px;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    margin-bottom: 20px;
+    box-shadow: 0 0 30px rgba(0, 242, 255, 0.15);
+}
+.main-title {
+    font-family: 'Geist', sans-serif !important;
+    font-size: 3rem;
+    font-weight: 700;
+    color: #e1fdff;
+    letter-spacing: -0.02em;
+    margin-bottom: 12px;
+}
+.main-title span {
+    background: linear-gradient(135deg, #00f2ff, #7000ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+.main-sub {
+    font-size: 1rem;
+    color: #b9cacb !important;
+    line-height: 1.6;
+}
+
+/* Insight Cards */
+.sc {
+    background: rgba(25, 31, 47, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 16px;
+    height: 100%;
+}
+.sc-icon {
+    font-size: 1.2rem;
+    margin-bottom: 16px;
+    color: #00f2ff;
+}
+.sc-l {
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 0.65rem;
+    color: #b9cacb;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+}
+.sc-n {
+    font-family: 'Geist', sans-serif !important;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+/* Doc Cards */
+.doc-card {
+    background: rgba(25, 31, 47, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.doc-card-icon {
+    width: 36px;
+    height: 36px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+}
+.doc-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #dde2f8;
+}
+.doc-meta {
+    font-size: 0.75rem;
+    color: #b9cacb;
+    margin-top: 4px;
+}
+.doc-badge {
+    background: rgba(255,255,255,0.1);
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-family: 'JetBrains Mono';
+}
+
+/* Chat Input Styling */
+[data-testid="stBottomBlock"], [data-testid="stBottom"], .stAppBottomBlock {
+    background: transparent !important;
+}
+[data-testid="stFileUploader"] label { 
+    display: none !important; 
+}
+[data-testid="stChatInputContainer"] {
+    background: rgba(13, 19, 34, 0.6) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 16px !important;
+    backdrop-filter: blur(24px) !important;
+    padding: 8px !important;
+}
+[data-testid="stChatInputContainer"] button {
+    background: #00f2ff !important;
+    border-radius: 12px !important;
+}
+[data-testid="stChatInputContainer"] button svg { fill: #002022 !important; }
+
+
+
+
+
+/* Chat UI Customization */
+[data-testid="stChatMessage"] {
+    background: transparent !important;
+}
+[data-testid="stChatMessage"]:has(.is-user) {
+    flex-direction: row !important;
+}
+[data-testid="stChatMessage"]:has(.is-user) [data-testid="stChatMessageContent"] {
+    background: rgba(25, 31, 47, 0.4);
+    border: 1px solid rgba(255,255,255,0.05);
+    padding: 12px 16px;
+    border-radius: 0 16px 16px 16px;
+}
+[data-testid="stChatMessage"]:has(.is-ai) {
+    flex-direction: row-reverse !important;
+}
+[data-testid="stChatMessage"]:has(.is-ai) [data-testid="stChatMessageContent"] {
+    background: linear-gradient(135deg, rgba(0, 242, 255, 0.1), rgba(112, 0, 255, 0.1));
+    border: 1px solid rgba(0, 242, 255, 0.2);
+    padding: 12px 16px;
+    border-radius: 16px 0 16px 16px;
+    text-align: right;
+    align-items: flex-end;
+}
+
+/* ANIMATIONS */
+@keyframes breathingBackground {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+@keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+    100% { transform: translateY(0px); }
+}
+@keyframes pulseGlow {
+    0% { box-shadow: 0 4px 15px rgba(112, 0, 255, 0.3); }
+    50% { box-shadow: 0 4px 25px rgba(0, 242, 255, 0.6); }
+    100% { box-shadow: 0 4px 15px rgba(112, 0, 255, 0.3); }
+}
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Apply Animations */
+.stApp {
+    background-size: 200% 200% !important;
+    animation: breathingBackground 15s ease infinite;
+}
+.hero-icon-wrapper, .sb-brand-icon {
+    animation: float 4s ease-in-out infinite;
+}
+.btn-brain {
+    animation: pulseGlow 3s infinite;
+}
+.sc {
+    animation: slideUp 0.6s ease-out forwards;
+}
+.doc-card {
+    animation: slideUp 0.5s ease-out forwards;
+    animation-fill-mode: both;
+}
+.doc-card:nth-child(1) { animation-delay: 0.1s; }
+.doc-card:nth-child(2) { animation-delay: 0.2s; }
+.doc-card:nth-child(3) { animation-delay: 0.3s; }
+
+.sc:hover, .doc-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 20px rgba(0, 242, 255, 0.15);
+    border-color: rgba(0, 242, 255, 0.3);
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* Ubah teks tombol upload bawaan Streamlit */
+[data-testid="stFileUploaderDropzone"] button {
+    color: transparent !important;
+    position: relative !important;
+}
+[data-testid="stFileUploaderDropzone"] button::after {
+    content: 'Masukan file';
+    color: #ffffff !important; /* warna terang untuk teks */
+    display: block;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-weight: 600;
+    width: 100%;
+    text-align: center;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
+if st.session_state.theme_mode == "Light":
+    st.markdown("""
+    <style>
+    :root {
+        --background-color: #f8fafc !important;
+        --secondary-background-color: #f1f5f9 !important;
+        --text-color: #0f172a !important;
+    }
+    .stApp { background: #f8fafc !important; }
+    .main-title { color: #0f172a !important; }
+    .main-sub { color: #475569 !important; }
+    [data-testid="stSidebar"] { background: rgba(241, 245, 249, 0.9) !important; border-right: 1px solid rgba(0,0,0,0.1) !important; }
+    .sb-name { color: #0f172a !important; }
+    .sb-powered { color: #475569 !important; }
+    .sc { background: rgba(255, 255, 255, 0.9) !important; border-color: rgba(0,0,0,0.1) !important; }
+    .sc-n { color: #0f172a !important; }
+    .sc-l { color: #475569 !important; }
+    .doc-card { background: rgba(255, 255, 255, 0.9) !important; border-color: rgba(0,0,0,0.1) !important; }
+    .doc-name { color: #0f172a !important; }
+    .doc-meta { color: #475569 !important; }
+    .doc-card-icon { background: rgba(0,0,0,0.05) !important; }
+    [data-testid="stSidebar"] .stButton > button { color: #0f172a !important; }
+    [data-testid="stSidebar"] .stButton > button:hover { background: rgba(0,0,0,0.05) !important; }
+    .main-hdr { background: rgba(255, 255, 255, 0.6) !important; border-color: rgba(0,0,0,0.1) !important; }
+    [data-testid="stChatInputContainer"] { background: rgba(255, 255, 255, 0.8) !important; border-color: rgba(0,0,0,0.1) !important; }
+    .txt-theme { color: #0f172a !important; }
+    .sub-theme { color: #475569 !important; }
+    [data-testid="stMetricValue"] { color: #0f172a !important; }
+    [data-testid="stMetricLabel"] { color: #475569 !important; }
+    [data-testid="stBottomBlock"], [data-testid="stBottom"], .stAppBottomBlock { background: #f8fafc !important; }
+    [data-baseweb="input"] { background: rgba(0,0,0,0.05) !important; color: #0f172a !important; }
+    [data-testid="stFileUploaderDropzone"] button::after { color: #0f172a !important; }
+    [data-testid="stChatMessage"]:has(.is-user) [data-testid="stChatMessageContent"] { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.1); color: #0f172a; }
+    [data-testid="stChatMessage"]:has(.is-ai) [data-testid="stChatMessageContent"] { background: linear-gradient(135deg, rgba(0,242,255,0.15), rgba(112,0,255,0.15)); border-color: rgba(0,242,255,0.4); color: #0f172a; }
+    </style>
+    """, unsafe_allow_html=True)
 
-# ============ HELPERS ============
+# ─── HELPERS ───────────────────────────────────────────────────────────────────
 def get_chat_history():
-    """Get or create chat history in session state."""
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = ChatHistory(max_turns=10)
     return st.session_state.chat_history
 
-
 def list_documents():
-    """List unique documents from ChromaDB."""
     try:
         all_data = collection.get()
-        metadatas = all_data.get("metadatas", [])
-        documents = {}
-        for meta in metadatas:
-            filename = meta.get("filename")
-            if filename and filename not in documents:
-                documents[filename] = {
-                    "filename": filename,
+        docs = {}
+        for meta in all_data.get("metadatas", []):
+            fn = meta.get("filename")
+            if fn and fn not in docs:
+                docs[fn] = {
+                    "filename": fn,
                     "subject": meta.get("subject", "general"),
                     "total_pages": meta.get("total_pages", 0),
                 }
-        return list(documents.values())
-    except:
+        return list(docs.values())
+    except Exception as e:
         return []
 
+if "current_page" not in st.session_state:
+    st.session_state.current_page = "Dashboard"
 
-# ============ SIDEBAR ============
+# ─── SIDEBAR ───────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown("""
-    <div style="text-align:center; padding:20px 0 10px">
-        <div style="font-size:3rem">🎓</div>
-        <div style="font-size:1.3rem; font-weight:800; color:white; margin-top:6px">AI Study Buddy</div>
-        <div style="font-size:0.78rem; color:rgba(255,255,255,0.4); margin-top:4px">Powered by RAG + DeepSeek</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.divider()
-
-    # Stats
     stats = get_collection_stats()
     chat_history = get_chat_history()
 
-    col1, col2 = st.columns(2)
-    with col1:
-        st.metric("Chunks", stats["total_chunks"])
-    with col2:
-        st.metric("Turns", chat_history.turn_count)
-
-    if chat_history.active_subject:
-        st.info(f"🎯 Subject: **{chat_history.active_subject}**")
-
-    st.divider()
-
-    # Upload Materi
-    st.markdown("**📚 Upload Materi**")
-    uploaded_file = st.file_uploader(
-        "Upload",
-        type=["pdf", "docx", "txt", "md"],
-        label_visibility="collapsed"
-    )
-
-    if uploaded_file:
-        st.markdown(f"""
-        <div style="background:rgba(102,126,234,0.15); border-radius:10px; padding:10px; margin:8px 0">
-            <div style="font-size:0.85rem; font-weight:600; color:white">📄 {uploaded_file.name}</div>
-            <div style="font-size:0.75rem; color:rgba(255,255,255,0.4)">{round(uploaded_file.size/1024, 1)} KB</div>
+    st.markdown(f"""
+    <div class="sb-brand">
+        <div class="sb-brand-icon">🧠</div>
+        <div class="sb-brand-text">
+            <div class="sb-name">AI Study Buddy</div>
+            <div class="sb-powered">Powered by RAG + Groq</div>
         </div>
-        """, unsafe_allow_html=True)
+    </div>
+    <div style="padding: 0 16px;">
+        <button class="btn-brain">⚡ Brain Mode</button>
+    </div>
+    """, unsafe_allow_html=True)
 
-        if st.button("⬆️ Upload & Index", use_container_width=True):
-            with st.spinner("Indexing materi..."):
-                try:
-                    # Save to temp file
-                    suffix = Path(uploaded_file.name).suffix
-                    with tempfile.NamedTemporaryFile(
-                        delete=False, suffix=suffix
-                    ) as tmp:
-                        tmp.write(uploaded_file.getvalue())
-                        tmp_path = tmp.name
+    nav_items = {
+        "Dashboard": "💠",
+        "Library": "📚",
+        "Analytics": "📈"
+    }
 
-                    # Load & detect subject
-                    document = load_document(tmp_path)
-                    document["filename"] = uploaded_file.name  # use original name
-                    subject = detect_subject(uploaded_file.name)
+    for name, icon in nav_items.items():
+        if st.button(f"{icon}  {name}", use_container_width=True):
+            set_page(name)
 
-                    # Index
-                    index_document(
-                        document,
-                        subject=subject,
-                        grade_level="umum",
-                        difficulty="intermediate"
-                    )
-
-                    # Cleanup temp
-                    os.unlink(tmp_path)
-
-                    st.success(
-                        f"✅ **{uploaded_file.name}**\n\n"
-                        f"Subject: `{subject}` · {document['total_pages']} hal"
-                    )
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"❌ Error: {e}")
-
-    st.divider()
-
-    # Daftar Materi
-    st.markdown("**📖 Materi Tersedia**")
-    docs = list_documents()
-    if not docs:
-        st.markdown("""
-        <div style="text-align:center; padding:16px; color:rgba(255,255,255,0.35); font-size:0.85rem">
-            📭 Belum ada materi
-        </div>
-        """, unsafe_allow_html=True)
-    else:
-        for doc in docs:
-            c1, c2 = st.columns([5, 1])
-            with c1:
-                st.markdown(f"""
-                <div style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1);
-                            border-radius:10px; padding:10px; margin-bottom:6px">
-                    <div style="font-size:0.82rem; font-weight:600; color:white;
-                                white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:170px">
-                        📄 {doc['filename']}
-                    </div>
-                    <span class="doc-badge">{doc['subject']}</span>
-                    <span style="font-size:0.7rem; color:rgba(255,255,255,0.4); margin-left:4px">{doc['total_pages']} hal</span>
-                </div>
-                """, unsafe_allow_html=True)
-            with c2:
-                if st.button("🗑", key=f"del_{doc['filename']}"):
-                    collection.delete(where={"filename": doc['filename']})
-                    st.rerun()
-
-    st.divider()
-
-    if st.button("🗑️ Clear History", use_container_width=True):
+    st.markdown('<div style="height: 40vh;"></div>', unsafe_allow_html=True)
+    if st.button("🕒 Clear History", use_container_width=True):
         chat_history.clear()
         st.session_state.messages = []
         st.rerun()
 
+# ─── TOP HEADER ────────────────────────────────────────────────────────────────
+colA, colB, colC = st.columns([1, 2, 1])
+with colA:
+    st.markdown('<div class="txt-theme" style="font-family: Geist; font-size: 1.5rem; font-weight: 600; color: #fff; padding-top:4px;">Knowledge Center</div>', unsafe_allow_html=True)
+with colB:
+    st.text_input("Search", placeholder="🔍 Cari materi...", label_visibility="collapsed")
+with colC:
+    theme_icon = "🌞 Mode Terang" if st.session_state.theme_mode == "Dark" else "🌙 Mode Gelap"
+    if st.button(theme_icon, use_container_width=True):
+        st.session_state.theme_mode = "Light" if st.session_state.theme_mode == "Dark" else "Dark"
+        st.rerun()
+
+st.divider()
+
+# ─── MAIN CONTENT ROUTING ──────────────────────────────────────────────────────
+if st.session_state.current_page == "Dashboard":
+    
     st.markdown("""
-    <div style="text-align:center; margin-top:16px; color:rgba(255,255,255,0.25); font-size:0.72rem">
-        AI Study Buddy v1.0<br>RAG + Streamlit
+    <div class="main-hdr">
+        <div class="hero-icon-wrapper">🧠</div>
+        <div class="main-title">Halo! Aku AI Study Buddy <span>Anda.</span></div>
+        <div class="main-sub">Teman belajar AI yang siap bantu 24/7 — upload materi, langsung bisa tanya!<br>Sistem terhubung, analisis mendalam, pemahaman lebih cepat.</div>
     </div>
     """, unsafe_allow_html=True)
 
+    c1, c2 = st.columns([3, 2])
+    with c1:
+        st.markdown('<div class="txt-theme" style="font-family: Geist; font-size: 1.2rem; font-weight: 600; color: #fff; margin-bottom: 16px;">📈 Study Insights</div>', unsafe_allow_html=True)
+        docs_count = len(list_documents())
+        
+        c_in1, c_in2, c_in3 = st.columns(3)
+        with c_in1:
+            st.markdown(f"""
+            <div class="sc">
+                <div class="sc-icon">📂</div>
+                <div class="sc-l">MATERI TERUNGGAH</div>
+                <div class="sc-n">{docs_count}</div>
+            </div>""", unsafe_allow_html=True)
+        with c_in2:
+            st.markdown(f"""
+            <div class="sc">
+                <div class="sc-icon">🧩</div>
+                <div class="sc-l">TOTAL CHUNKS</div>
+                <div class="sc-n">{stats.get('total_chunks', 0)}</div>
+            </div>""", unsafe_allow_html=True)
+        with c_in3:
+            st.markdown(f"""
+            <div class="sc">
+                <div class="sc-icon">💬</div>
+                <div class="sc-l">AI INTERACTIONS</div>
+                <div class="sc-n">{chat_history.turn_count}</div>
+            </div>""", unsafe_allow_html=True)
 
-# ============ MAIN ============
+    with c2:
+        st.markdown('<div class="txt-theme" style="font-family: Geist; font-size: 1.2rem; font-weight: 600; color: #fff; margin-bottom: 16px;">⏳ Recent <span style="float:right; font-size: 0.8rem; color: #b9cacb; margin-top:4px;">Lihat Semua</span></div>', unsafe_allow_html=True)
+        docs = list_documents()[:3]
+        if not docs:
+            st.markdown('<div class="doc-card" style="justify-content:center; color:#b9cacb;">Belum ada dokumen</div>', unsafe_allow_html=True)
+        for doc in docs:
+            st.markdown(f"""
+            <div class="doc-card">
+                <div class="doc-card-icon">📄</div>
+                <div style="flex:1;">
+                    <div class="doc-name">{doc['filename']}</div>
+                    <div class="doc-meta">Diakses baru saja</div>
+                </div>
+                <div class="doc-badge">{doc['subject'].upper()}</div>
+            </div>
+            """, unsafe_allow_html=True)
 
-# Hero
-st.markdown("""
-<div class="hero">
-    <div class="hero-title">🎓 AI Study Buddy</div>
-    <div class="hero-sub">Teman belajar AI yang siap bantu 24/7 — upload materi, langsung bisa tanya!</div>
-</div>
-""", unsafe_allow_html=True)
+elif st.session_state.current_page == "Library":
+    st.markdown('<div class="txt-theme" style="font-family: Geist; font-size: 1.5rem; font-weight: 600; color: #fff; margin-bottom: 16px;">📚 Library & Upload</div>', unsafe_allow_html=True)
+    
+    with st.container(border=True):
+        st.markdown('<div class="sub-theme" style="font-size: 0.9rem; margin-bottom: 8px; color: #b9cacb;">Unggah dokumen materi (.pdf, .docx, .txt, .md)</div>', unsafe_allow_html=True)
+        uploaded_file = st.file_uploader("Upload Dokumen Baru", type=["pdf", "docx", "txt", "md"], label_visibility="collapsed")
+        if uploaded_file:
+            st.markdown(f"**File:** {uploaded_file.name} ({round(uploaded_file.size/1024,1)} KB)")
+            subj = st.text_input("Subjek Dokumen (Opsional)")
+            if st.button("Mulai Indexing"):
+                with st.spinner("Mengindeks materi..."):
+                    try:
+                        suffix = Path(uploaded_file.name).suffix
+                        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+                            tmp.write(uploaded_file.getvalue())
+                            tmp_path = tmp.name
 
-# Stats
-doc_count = len(list_documents())
-st.markdown(f"""
-<div class="stat-grid">
-    <div class="stat-card"><div class="stat-number">{doc_count}</div><div class="stat-label">📚 Materi</div></div>
-    <div class="stat-card"><div class="stat-number">{stats['total_chunks']}</div><div class="stat-label">🧩 Chunks</div></div>
-    <div class="stat-card"><div class="stat-number">{chat_history.turn_count}</div><div class="stat-label">💬 Turns</div></div>
-</div>
-""", unsafe_allow_html=True)
+                        try:
+                            document = load_document(tmp_path)
+                            document["filename"] = uploaded_file.name
+                            index_document(document, subject=subj, grade_level="umum", difficulty="intermediate")
+                            st.success("✅ Berhasil diunggah dan diindeks!")
+                        finally:
+                            if os.path.exists(tmp_path):
+                                os.unlink(tmp_path)
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Error: {e}")
 
-# Chat
-st.markdown('<div class="chat-wrapper">', unsafe_allow_html=True)
+    st.markdown('<h3 class="txt-theme" style="color: #fff;">Dokumen Tersedia</h3>', unsafe_allow_html=True)
+    docs = list_documents()
+    for doc in docs:
+        col1, col2 = st.columns([4, 1])
+        with col1:
+            st.markdown(f'<span class="txt-theme" style="color: #fff;">📄 **{doc["filename"]}** — {doc["subject"]} ({doc["total_pages"]} hal)</span>', unsafe_allow_html=True)
+        with col2:
+            if st.button("Hapus", key=f"del_{doc['filename']}"):
+                collection.delete(where={"filename": doc['filename']})
+                st.rerun()
 
-if "messages" not in st.session_state:
-    st.session_state.messages = [
-        {
-            "role": "assistant",
-            "content": (
-                "**Halo! Aku AI Study Buddy** 👋\n\n"
-                "Aku siap bantu kamu belajar dari materi yang kamu upload!\n\n"
-                "**Cara pakai:**\n"
-                "1. 📚 Upload materi di sidebar kiri\n"
-                "2. 💬 Tanya apapun tentang materinya\n"
-                "3. 🎯 Sebut subject biar fokus: *'soal matematika tentang turunan'*\n\n"
-                "Mau belajar apa hari ini? 😊"
-            )
-        }
-    ]
 
-for msg in st.session_state.messages:
-    with st.chat_message(msg["role"], avatar="🎓" if msg["role"] == "assistant" else "👤"):
-        st.markdown(msg["content"])
 
-st.markdown('</div>', unsafe_allow_html=True)
+elif st.session_state.current_page == "Analytics":
+    st.markdown('<div class="txt-theme" style="font-family: Geist; font-size: 1.5rem; font-weight: 600; color: #fff; margin-bottom: 16px;">📈 Study Analytics</div>', unsafe_allow_html=True)
+    
+    import pandas as pd
+    
+    docs = list_documents()
+    total_docs = len(docs)
+    total_chunks = get_collection_stats().get("total_chunks", 0)
+    
+    # Hitung interaksi berdasarkan panjang pesan (bagi 2 karena 1 pasang user-assistant)
+    interactions = len(st.session_state.get("messages", [])) // 2
+    
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric(label="Total Dokumen", value=f"{total_docs} File")
+    with col2:
+        st.metric(label="Materi Terindeks", value=f"{total_chunks} Chunks")
+    with col3:
+        st.metric(label="Tanya Jawab AI", value=f"{interactions} Sesi")
+        
+    st.divider()
+    
+    st.markdown('<div class="sub-theme" style="font-size: 1.1rem; color: #b9cacb; margin-bottom: 12px;">Distribusi Topik Materi</div>', unsafe_allow_html=True)
+    
+    if total_docs > 0:
+        subjects = {}
+        for d in docs:
+            subj = d.get('subject', '').strip()
+            if not subj:
+                subj = "Umum"
+            subj = subj.capitalize()
+            subjects[subj] = subjects.get(subj, 0) + 1
+            
+        chart_data = pd.DataFrame({
+            "Topik": list(subjects.keys()),
+            "Jumlah Dokumen": list(subjects.values())
+        }).set_index("Topik")
+        
+        st.bar_chart(chart_data, color="#00f2ff")
+    else:
+        st.info("Belum ada dokumen yang diunggah. Unggah materi di menu Library untuk melihat analitik.")
 
-# Chat Input
-if prompt := st.chat_input("Tanya apapun tentang materi belajar lo..."):
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user", avatar="👤"):
-        st.markdown(prompt)
 
-    with st.chat_message("assistant", avatar="🎓"):
-        try:
-            # LANGSUNG call generator (no HTTP request!)
-            full_response = st.write_stream(
-                generate_answer_streaming(
-                    question=prompt,
-                    chat_history=chat_history
-                )
-            )
-            st.session_state.messages.append({
-                "role": "assistant",
-                "content": full_response or ""
-            })
-        except Exception as e:
-            msg = f"❌ Error: {str(e)}"
-            st.error(msg)
-            st.session_state.messages.append({"role": "assistant", "content": msg})
+
+
+# ─── CHAT AREA ─────────────────────────────────────────────────────────────────
+if st.session_state.current_page == "Dashboard":
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+
+    # Only show chat messages if there are any
+    if st.session_state.messages:
+        st.markdown('<div style="margin-top: 40px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 20px;">', unsafe_allow_html=True)
+        for msg in st.session_state.messages:
+            is_user = msg["role"] == "user"
+            avatar = "🧑‍🎓" if is_user else "🧠"
+            span_class = "is-user" if is_user else "is-ai"
+            with st.chat_message(msg["role"], avatar=avatar):
+                st.markdown(f"<span class='{span_class}'></span>" + msg["content"], unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    if prompt := st.chat_input("Tanya apapun tentang materi belajar lo..."):
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        st.rerun()
+
+    if st.session_state.messages and st.session_state.messages[-1]["role"] == "user":
+        with st.chat_message("assistant", avatar="🧠"):
+            response_placeholder = st.empty()
+            full_response = ""
+            try:
+                for chunk in generate_answer_streaming(st.session_state.messages[-1]["content"], chat_history=get_chat_history()):
+                    full_response += chunk
+                    response_placeholder.markdown("<span class='is-ai'></span>" + full_response + "▌", unsafe_allow_html=True)
+                response_placeholder.markdown("<span class='is-ai'></span>" + full_response, unsafe_allow_html=True)
+                st.session_state.messages.append({"role": "assistant", "content": full_response})
+            except Exception as e:
+                st.error(f"Error: {e}")

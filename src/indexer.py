@@ -13,52 +13,17 @@ chroma_client = chromadb.PersistentClient(path=CHROMA_PATH)
 collection = chroma_client.get_or_create_collection(name=COLLECTION_NAME)
 
 
-def detect_subject(filename: str) -> str:
-    """
-    Auto-detect subject dari nama file.
-
-    Contoh:
-    '01_matematika_kalkulus.pdf'  -> 'matematika'
-    '02_fisika_hukum_newton.pdf'  -> 'fisika'
-    '03_pengenalan_python.pdf'    -> 'python'
-    """
-    filename_lower = filename.lower()
-
-    subject_keywords = {
-        "matematika": ["matematika", "math", "kalkulus",
-                       "aljabar", "geometri", "statistik"],
-        "fisika":     ["fisika", "physics", "newton",
-                       "mekanika", "termodinamika", "gelombang"],
-        "kimia":      ["kimia", "chemistry", "reaksi", "molekul"],
-        "biologi":    ["biologi", "biology", "sel", "genetika"],
-        "python":     ["python", "programming", "coding",
-                       "pemrograman", "algoritma"],
-        "sejarah":    ["sejarah", "history"],
-        "ekonomi":    ["ekonomi", "economics"],
-        "bahasa":     ["bahasa", "grammar", "sastra"],
-    }
-
-    for subject, keywords in subject_keywords.items():
-        for keyword in keywords:
-            if keyword in filename_lower:
-                return subject
-
-    return "general"
-
-
 def index_document(
     document: dict,
-    subject: str = None,
+    subject: str = "umum",
     grade_level: str = "umum",
     difficulty: str = "intermediate"
 ):
     """
     Index dokumen ke ChromaDB dengan metadata edutech.
-    Kalau subject tidak dikasih, auto-detect dari nama file.
     """
-    # Auto-detect kalau subject tidak dikasih
-    if not subject:
-        subject = detect_subject(document["filename"])
+    if not subject or subject.strip() == "":
+        subject = "umum"
 
     all_chunks = []
     all_metadatas = []
