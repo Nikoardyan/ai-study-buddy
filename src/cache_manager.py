@@ -188,6 +188,40 @@ def clear_cache():
     print("[Cache] Cleared all caches")
 
 
+def invalidate_document_cache(filename: str):
+    """
+    Hapus entri cache yang terkait dengan dokumen tertentu.
+    Jika filename ada di context_key atau metadata response, entri dihapus.
+    """
+    # Bersihkan semantic cache yang merujuk pada filename
+    keys_to_delete = []
+    for key in semantic_cache.iterkeys():
+        try:
+            entry = semantic_cache.get(key)
+            if entry and (filename in entry.get("context_key", "") or filename in entry.get("response", "")):
+                keys_to_delete.append(key)
+        except Exception:
+            continue
+
+    for k in keys_to_delete:
+        del semantic_cache[k]
+
+    # Bersihkan exact cache yang mengandung filename
+    exact_to_delete = []
+    for key in exact_cache.iterkeys():
+        try:
+            val = exact_cache.get(key)
+            if val and filename in str(val):
+                exact_to_delete.append(key)
+        except Exception:
+            continue
+
+    for k in exact_to_delete:
+        del exact_cache[k]
+
+    print(f"[Cache] Invalidated {len(keys_to_delete)} semantic & {len(exact_to_delete)} exact entries for {filename}")
+
+
 # ── TEST ──────────────────────────────────────────────────────
 def test_cache():
     """Test caching system."""

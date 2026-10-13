@@ -43,3 +43,15 @@ Thumbs.db
 
 # Logs
 *.log
+# Local runtime cache and databases
+.cache/
+*.db
+*.sqlite
+*.sqlite3
+
+# Secrets
+.env.*
+!.env.example
+
+# OS files
+.DS_Store

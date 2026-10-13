@@ -1,0 +1,586 @@
+[
+  {
+    "id": "1",
+    "type": "factual",
+    "question": "Apa definisi Human-Computer Interaction?",
+    "answerable": true,
+    "primary_pages": [
+      3
+    ],
+    "acceptable_pages": [
+      19
+    ],
+    "history": [],
+    "reference_answer": "Human-Computer Interaction (HCI) atau Interaksi Manusia & Komputer (IMK) adalah ilmu yang mempelajari bagaimana manusia berinteraksi dengan komputer, sekaligus merancang sistem komputer yang efektif, efisien, dan nyaman digunakan manusia.",
+    "key_facts": [
+      "ilmu mempelajari interaksi manusia dan komputer",
+      "merancang sistem efektif, efisien, dan nyaman digunakan"
+    ],
+    "expected_behavior": "answer"
+  },
+  {
+    "id": "2",
+    "type": "factual",
+    "question": "Sebutkan komponen utama IMK.",
+    "answerable": true,
+    "primary_pages": [
+      4
+    ],
+    "acceptable_pages": [
+      19
+    ],
+    "history": [],
+    "reference_answer": "Komponen utama IMK terdiri dari tiga elemen: 1) Manusia (User) yaitu pengguna dengan kemampuan dan keterbatasan tertentu, 2) Komputer (Sistem) yaitu hardware dan software yang berinteraksi dengan manusia, dan 3) Interaksi yaitu cara komunikasi antara manusia dan komputer (siklus input/output).",
+    "key_facts": [
+      "Manusia (User)",
+      "Komputer (Sistem)",
+      "Interaksi (komunikasi input/output)"
+    ],
+    "expected_behavior": "answer"
+  },
+  {
+    "id": "3",
+    "type": "out_of_scope",
+    "question": "Apakah AI Study Buddy dapat mengakses internet?",
+    "answerable": false,
+    "primary_pages": [],
+    "acceptable_pages": [],
+    "history": [],
+    "reference_answer": "Informasi mengenai apakah AI Study Buddy dapat mengakses internet tidak tersedia dalam dokumen materi.",
+    "key_facts": [],
+    "expected_behavior": "abstain"
+  },
+  {
+    "id": "4",
+    "type": "factual",
+    "question": "Apa itu usability dan sebutkan 5 komponennya menurut Jakob Nielsen.",
+    "answerable": true,
+    "primary_pages": [
+      7
+    ],
+    "acceptable_pages": [
+      19
+    ],
+    "history": [],
+    "reference_answer": "Usability adalah tingkat kemudahan sebuah sistem digunakan user untuk mencapai tujuan secara efektif, efisien, dan memuaskan. Lima komponen usability menurut Jakob Nielsen adalah: 1) Learnability (mudah dipelajari pertama kali), 2) Efficiency (kecepatan menyelesaikan tugas setelah paham), 3) Memorability (kemudahan mengingat cara pakai setelah lama tidak dipakai), 4) Errors (tingkat kesalahan rendah dan mudah dipulihkan), dan 5) Satisfaction (kepuasan pengguna menggunakan sistem).",
+    "key_facts": [
+      "definisi usability (efektif, efisien, memuaskan)",
+      "Learnability",
+      "Efficiency",
+      "Memorability",
+      "Errors",
+      "Satisfaction"
+    ],
+    "expected_behavior": "answer"
+  },
+  {
+    "id": "5",
+    "type": "followup",
+    "question": "Apa saja komponen usability?",
+    "answerable": true,
+    "primary_pages": [
+      7
+    ],
+    "acceptable_pages": [
+      19
+    ],
+    "history": [
+      {
+        "role": "user",
+        "content": "Jelaskan konsep usability dalam HCI."
+      }
+    ],
+    "reference_answer": "Komponen usability menurut Jakob Nielsen mencakup 5 aspek: Learnability, Efficiency, Memorability, Errors (tingkat kesalahan), dan Satisfaction (kepuasan).",
+    "key_facts": [
+      "Learnability",
+      "Efficiency",
+      "Memorability",
+      "Errors",
+      "Satisfaction"
+    ],
+    "expected_behavior": "answer"
+  },
+  {
+    "id": "6",
+    "type": "out_of_scope",
+    "question": "Siapa penemu algoritma quicksort?",
+    "answerable": false,
+    "primary_pages": [],
+    "acceptable_pages": [],
+    "history": [],
+    "reference_answer": "Materi dokumen tidak memuat informasi tentang penemu algoritma quicksort.",
+    "key_facts": [],
+    "expected_behavior": "abstain"
+  },
+  {
+    "id": "7",
+    "type": "factual",
+    "question": "Sebutkan 8 Golden Rules of Interface Design menurut Shneiderman.",
+    "answerable": true,
+    "primary_pages": [
+      8
+    ],
+    "acceptable_pages": [
+      20
+    ],
+    "history": [],
+    "reference_answer": "8 Golden Rules of Interface Design menurut Ben Shneiderman adalah: 1) Strive for consistency, 2) Cater to universal usability, 3) Offer informative feedback, 4) Design dialogs to yield closure, 5) Prevent errors, 6) Permit easy reversal of actions, 7) Support internal locus of control, dan 8) Reduce short-term memory load.",
+    "key_facts": [
+      "Consistency",
+      "Universal usability",
+      "Informative feedback",
+      "Yield closure",
+      "Prevent errors",
+      "Easy reversal of actions",
+      "Internal locus of control",
+      "Reduce short-term memory load"
+    ],
+    "expected_behavior": "answer"
+  },
+  {
+    "id": "8",
+    "type": "factual",
+    "question": "Jelaskan 10 prinsip heuristik usability dari Jakob Nielsen.",
+    "answerable": true,
+    "primary_pages": [
+      9
+    ],
+    "acceptable_pages": [
+      20
+    ],
+    "history": [],
+    "reference_answer": "10 prinsip heuristik usability Jakob Nielsen adalah: 1) Visibility of system status, 2) Match between system and real world, 3) User control and freedom, 4) Consistency and standards, 5) Error prevention, 6) Recognition rather than recall, 7) Flexibility and efficiency of use, 8) Aesthetic and minimalist design, 9) Help users recognize, diagnose, and recover from errors, dan 10) Help and documentation.",
+    "key_facts": [
+      "Visibility of system status",
+      "Match between system and real world",
+      "User control and freedom",
+      "Consistency and standards",
+      "Error prevention",
+      "Recognition rather than recall",
+      "Flexibility and efficiency of use",
+      "Aesthetic and minimalist design",
+      "Help recognize, diagnose, recover errors",
+      "Help and documentation"
+    ],
+    "expected_behavior": "answer"
+  },
+  {
+    "id": "9",
+    "type": "out_of_scope",
+    "question": "Berapa populasi Indonesia pada tahun 2025?",
+    "answerable": false,
+    "primary_pages": [],
+    "acceptable_pages": [],
+    "history": [],
+    "reference_answer": "Informasi populasi Indonesia tahun 2025 tidak terdapat dalam dokumen materi yang diunggah.",
+    "key_facts": [],
+    "expected_behavior": "abstain"
+  },
+  {
+    "id": "10",
+    "type": "factual",
+    "question": "Apa itu affordance menurut Don Norman?",
+    "answerable": true,
+    "primary_pages": [
+      10
+    ],
+    "acceptable_pages": [
+      20
+    ],
+    "history": [],
+    "reference_answer": "Affordance menurut Don Norman adalah petunjuk fisik tentang cara pakai sebuah objek yang terlihat jelas dari bentuknya, contohnya pegangan pintu yang memberi petunjuk apakah harus ditarik atau didorong.",
+    "key_facts": [
+      "petunjuk fisik tentang cara pakai sebuah objek",
+      "Don Norman",
+      "contoh pegangan pintu"
+    ],
+    "expected_behavior": "answer"
+  },
+  {
+    "id": "11",
+    "type": "factual",
+    "question": "Jelaskan perbedaan antara slip dan mistake menurut Don Norman.",
+    "answerable": true,
+    "primary_pages": [
+      11
+    ],
+    "acceptable_pages": [],
+    "history": [],
+    "reference_answer": "Menurut Don Norman, Slip adalah kondisi di mana niat pengguna sudah benar tetapi aksinya keliru (biasanya karena kurang perhatian, kebiasaan otomatis, atau salah pencet). Sedangkan Mistake adalah kondisi di mana niat atau rencananya sendiri yang salah karena salah paham atau model mental yang keliru.",
+    "key_facts": [
+      "Slip: niat benar aksi keliru",
+      "Mistake: niat/rencana sendiri yang salah",
+      "Slip disebabkan otomatis/kurang perhatian",
+      "Mistake disebabkan model mental salah"
+    ],
+    "expected_behavior": "answer"
+  },
+  {
+    "id": "12",
+    "type": "followup",
+    "question": "Bagaimana cara mencegah error tersebut dalam desain?",
+    "answerable": true,
+    "primary_pages": [
+      11
+    ],
+    "acceptable_pages": [
+      8,
+      9
+    ],
+    "history": [
+      {
+        "role": "user",
+        "content": "Jelaskan perbedaan slip dan mistake menurut Norman."
+      }
+    ],
+    "reference_answer": "Cara mencegah Slip adalah dengan konfirmasi untuk aksi berbahaya, pemisahan tombol yang mirip, serta visual affordance yang jelas. Cara mencegah Mistake adalah dengan sistem bantuan/panduan yang jelas, pesan error edukatif, dan menyelaraskan sistem dengan model mental pengguna.",
+    "key_facts": [
+      "mencegah slip: konfirmasi, pemisahan tombol",
+      "mencegah mistake: panduan jelas, pesan error edukatif, model mental selaras"
+    ],
+    "expected_behavior": "answer"
+  },
+  {
+    "id": "13",
+    "type": "factual",
+    "question": "Apa saja elemen desain visual dalam perancangan antarmuka?",
+    "answerable": true,
+    "primary_pages": [
+      12
+    ],
+    "acceptable_pages": [],
+    "history": [],
+    "reference_answer": "Elemen desain visual dalam perancangan antarmuka meliputi: Tata Letak (Layout), Tipografi (Font), Pemilihan Warna, Whitespace (ruang kosong), dan Hierarki Visual.",
+    "key_facts": [
+      "Tata Letak (Layout)",
+      "Tipografi (Font)",
+      "Pemilihan Warna",
+      "Whitespace",
+      "Hierarki Visual"
+    ],
+    "expected_behavior": "answer"
+  },
+  {
+    "id": "14",
+    "type": "out_of_scope",
+    "question": "Siapa presiden Indonesia pada tahun 2030?",
+    "answerable": false,
+    "primary_pages": [],
+    "acceptable_pages": [],
+    "history": [],
+    "reference_answer": "Materi dokumen tidak mencakup informasi mengenai presiden Indonesia pada tahun 2030.",
+    "key_facts": [],
+    "expected_behavior": "abstain"
+  },
+  {
+    "id": "15",
+    "type": "factual",
+    "question": "Jelaskan 4 prinsip WCAG (POUR) dalam accessibility.",
+    "answerable": true,
+    "primary_pages": [
+      13
+    ],
+    "acceptable_pages": [],
+    "history": [],
+    "reference_answer": "4 prinsip WCAG (POUR) dalam accessibility adalah: 1) Perceivable (konten dapat dipersepsi semua indera, misal alt text gambar), 2) Operable (interface dapat dioperasikan, misal navigasi keyboard), 3) Understandable (konten dan navigasi mudah dipahami), dan 4) Robust (konten kompatibel dengan berbagai teknologi bantu seperti screen reader).",
+    "key_facts": [
+      "Perceivable",
+      "Operable",
+      "Understandable",
+      "Robust"
+    ],
+    "expected_behavior": "answer"
+  },
+  {
+    "id": "16",
+    "type": "factual",
+    "question": "Apa perbedaan antara storyboard, scenario, dan prototype?",
+    "answerable": true,
+    "primary_pages": [
+      14
+    ],
+    "acceptable_pages": [
+      21
+    ],
+    "history": [],
+    "reference_answer": "Perbedaannya: Storyboard adalah sketsa gambar berurutan untuk visualisasi alur layar pada awal perancangan. Scenario adalah narasi teks yang menceritakan bagaimana user menggunakan sistem. Prototype adalah model semi-fungsional untuk simulasi sistem nyata yang bisa dicoba langsung oleh pengguna.",
+    "key_facts": [
+      "Storyboard: sketsa gambar berurutan visual alur layar",
+      "Scenario: narasi teks cerita user pakai sistem",
+      "Prototype: model semi-fungsional simulasi nyata"
+    ],
+    "expected_behavior": "answer"
+  },
+  {
+    "id": "17",
+    "type": "multi_chunk",
+    "question": "Sebutkan dan jelaskan jenis-jenis struktur navigasi.",
+    "answerable": true,
+    "primary_pages": [
+      15
+    ],
+    "acceptable_pages": [
+      21
+    ],
+    "history": [],
+    "reference_answer": "Jenis-jenis struktur navigasi meliputi: 1) Linear/Sekuensial (alur berurutan satu arah maju/mundur), 2) Hierarki (tersusun seperti pohon parent-child dari root/home), 3) Jaringan/Network (halaman saling terhubung bebas melalui hyperlink), dan 4) Campuran/Hybrid (kombinasi hierarki dan linear/jaringan).",
+    "key_facts": [
+      "Linear (sekuensial)",
+      "Hierarki",
+      "Jaringan (Network)",
+      "Campuran (Hybrid)"
+    ],
+    "expected_behavior": "answer"
+  },
+  {
+    "id": "18",
+    "type": "followup",
+    "question": "Mana yang paling fleksibel dan sering dipakai?",
+    "answerable": true,
+    "primary_pages": [
+      15
+    ],
+    "acceptable_pages": [
+      21
+    ],
+    "history": [
+      {
+        "role": "user",
+        "content": "Sebutkan jenis-jenis struktur navigasi."
+      }
+    ],
+    "reference_answer": "Struktur navigasi campuran (hybrid) atau jaringan yang dikombinasikan dengan hierarki adalah yang paling fleksibel dan sering dipakai pada aplikasi modern.",
+    "key_facts": [
+      "struktur campuran / hierarki kombinasi",
+      "fleksibel dan umum di aplikasi/website modern"
+    ],
+    "expected_behavior": "answer"
+  },
+  {
+    "id": "19",
+    "type": "out_of_scope",
+    "question": "Berikan resep rendang tradisional.",
+    "answerable": false,
+    "primary_pages": [],
+    "acceptable_pages": [],
+    "history": [],
+    "reference_answer": "Resep rendang tradisional tidak terdapat dalam materi dokumen yang diunggah.",
+    "key_facts": [],
+    "expected_behavior": "abstain"
+  },
+  {
+    "id": "20",
+    "type": "factual",
+    "question": "Sebutkan gaya-gaya interaksi beserta contohnya.",
+    "answerable": true,
+    "primary_pages": [
+      16
+    ],
+    "acceptable_pages": [
+      21
+    ],
+    "history": [],
+    "reference_answer": "Gaya interaksi beserta contohnya meliputi: Command Line (terminal/Linux shell), Menu Selection (menu aplikasi/dropdown), Form Filling (form registrasi), Direct Manipulation (drag-drop file, slider), dan Natural Language (chatbot/voice assistant).",
+    "key_facts": [
+      "Command Line",
+      "Menu Selection",
+      "Form Filling",
+      "Direct Manipulation",
+      "Natural Language"
+    ],
+    "expected_behavior": "answer"
+  },
+  {
+    "id": "21",
+    "type": "factual",
+    "question": "Sebutkan metode-metode evaluasi usability.",
+    "answerable": true,
+    "primary_pages": [
+      17
+    ],
+    "acceptable_pages": [
+      21
+    ],
+    "history": [],
+    "reference_answer": "Metode evaluasi usability meliputi: Heuristic Evaluation (oleh expert), Usability Testing (oleh user asli), Cognitive Walkthrough (evaluator simulasikan langkah pemula), Survey/Kuesioner (misal kuesioner SUS), dan A/B Testing (membandingkan 2 varian desain).",
+    "key_facts": [
+      "Heuristic Evaluation",
+      "Usability Testing",
+      "Cognitive Walkthrough",
+      "Survey/Kuesioner (SUS)",
+      "A/B Testing"
+    ],
+    "expected_behavior": "answer"
+  },
+  {
+    "id": "22",
+    "type": "factual",
+    "question": "Jelaskan tahapan User-Centered Design (UCD).",
+    "answerable": true,
+    "primary_pages": [
+      18
+    ],
+    "acceptable_pages": [],
+    "history": [],
+    "reference_answer": "Tahapan User-Centered Design (UCD) yang bersifat iteratif adalah: 1) Understand context of use (pahami siapa user dan tujuannya), 2) Specify user requirements (tentukan kebutuhan spesifik user), 3) Design solutions (buat solusi desain konsep hingga prototype), dan 4) Evaluate against requirements (evaluasi usability bersama user).",
+    "key_facts": [
+      "Understand context of use",
+      "Specify user requirements",
+      "Design solutions",
+      "Evaluate against requirements",
+      "proses iteratif"
+    ],
+    "expected_behavior": "answer"
+  },
+  {
+    "id": "23",
+    "type": "out_of_scope",
+    "question": "Berapa suhu rata‑rata di Kutub Utara?",
+    "answerable": false,
+    "primary_pages": [],
+    "acceptable_pages": [],
+    "history": [],
+    "reference_answer": "Dokumen materi tidak memuat informasi mengenai suhu rata-rata di Kutub Utara.",
+    "key_facts": [],
+    "expected_behavior": "abstain"
+  },
+  {
+    "id": "24",
+    "type": "factual",
+    "question": "Apa tujuan IMK?",
+    "answerable": true,
+    "primary_pages": [
+      3
+    ],
+    "acceptable_pages": [
+      19
+    ],
+    "history": [],
+    "reference_answer": "Tujuan IMK adalah menghasilkan sistem komputer yang usable (mudah digunakan), safe (aman), meningkatkan efektivitas dan produktivitas, serta memberikan user experience yang baik guna meminimalkan biaya training dan error.",
+    "key_facts": [
+      "sistem usable (mudah digunakan)",
+      "sistem safe (aman)",
+      "efektivitas dan efisiensi",
+      "mengurangi biaya training dan error"
+    ],
+    "expected_behavior": "answer"
+  },
+  {
+    "id": "25",
+    "type": "factual",
+    "question": "Jelaskan hukum-hukum UX: Miller, Fitts, Hick, dan Doherty.",
+    "answerable": true,
+    "primary_pages": [
+      6
+    ],
+    "acceptable_pages": [
+      19
+    ],
+    "history": [],
+    "reference_answer": "Hukum-hukum UX: 1) Millers Law (kapasitas memori kerja manusia hanya 7 +/- 2 chunks informasi), 2) Fitts Law (waktu meraih target bergantung pada jarak dan ukuran target), 3) Hicks Law (waktu pengambilan keputusan bertambah seiring banyaknya pilihan), dan 4) Dohertys Threshold (produktivitas meningkat drastis jika sistem merespons dalam < 400 milidetik).",
+    "key_facts": [
+      "Miller: memori kerja 7 +/- 2",
+      "Fitts: waktu jangkau target (jarak dan ukuran)",
+      "Hick: waktu keputusan bertambah seiring opsi",
+      "Doherty: respons sistem < 400ms"
+    ],
+    "expected_behavior": "answer"
+  },
+  {
+    "id": "26",
+    "type": "followup",
+    "question": "Bagaimana implikasi hukum Fitts terhadap desain tombol?",
+    "answerable": true,
+    "primary_pages": [
+      6
+    ],
+    "acceptable_pages": [
+      19
+    ],
+    "history": [
+      {
+        "role": "user",
+        "content": "Jelaskan hukum-hukum UX dalam IMK."
+      }
+    ],
+    "reference_answer": "Implikasi hukum Fitts terhadap desain tombol adalah tombol aksi utama (CTA) harus berukuran cukup besar dan mudah dijangkau, serta tombol di pojok/tepi layar memiliki jangkauan tak hingga (mudah diklik).",
+    "key_facts": [
+      "tombol penting dibuat lebih besar",
+      "jarak dekat / mudah dijangkau kursor"
+    ],
+    "expected_behavior": "answer"
+  },
+  {
+    "id": "27",
+    "type": "factual",
+    "question": "Apa itu faktor manusia (human factors) dalam IMK?",
+    "answerable": true,
+    "primary_pages": [
+      5
+    ],
+    "acceptable_pages": [
+      19
+    ],
+    "history": [],
+    "reference_answer": "Faktor manusia (human factors) dalam IMK adalah pemahaman terhadap kemampuan dan keterbatasan fisik serta kognitif manusia (seperti sistem indera penglihatan, pendengaran, sentuhan, kapasitas memori, dan pemrosesan informasi) agar antarmuka dapat disesuaikan tanpa membebani pengguna.",
+    "key_facts": [
+      "kemampuan dan keterbatasan manusia",
+      "sistem indera (penglihatan, pendengaran)",
+      "kapasitas memori dan kognisi"
+    ],
+    "expected_behavior": "answer"
+  },
+  {
+    "id": "28",
+    "type": "out_of_scope",
+    "question": "Berikan prediksi harga saham Apple minggu depan.",
+    "answerable": false,
+    "primary_pages": [],
+    "acceptable_pages": [],
+    "history": [],
+    "reference_answer": "Prediksi harga saham Apple tidak terdapat di dalam materi dokumen yang diunggah.",
+    "key_facts": [],
+    "expected_behavior": "abstain"
+  },
+  {
+    "id": "29",
+    "type": "multi_chunk",
+    "question": "Bandingkan prinsip desain Shneiderman, Nielsen, dan Norman.",
+    "answerable": true,
+    "primary_pages": [
+      8,
+      9,
+      10
+    ],
+    "acceptable_pages": [
+      20
+    ],
+    "history": [],
+    "reference_answer": "Perbandingan prinsip: Shneiderman berfokus pada 8 aturan praktis interaksi (8 Golden Rules seperti konsistensi dan penanganan error), Nielsen berfokus pada 10 heuristik untuk panduan dan evaluasi antarmuka, sedangkan Norman berfokus pada psikologi kognitif dan model mental (affordance, signifier, mapping, feedback).",
+    "key_facts": [
+      "Shneiderman: 8 Golden Rules (aturan aksi antarmuka)",
+      "Nielsen: 10 Usability Heuristics (evaluasi & usability)",
+      "Norman: psikologi kognitif, affordance, model mental"
+    ],
+    "expected_behavior": "answer"
+  },
+  {
+    "id": "30",
+    "type": "factual",
+    "question": "Apa itu direct manipulation dan WIMP?",
+    "answerable": true,
+    "primary_pages": [
+      16
+    ],
+    "acceptable_pages": [
+      21
+    ],
+    "history": [],
+    "reference_answer": "Direct manipulation adalah gaya interaksi di mana pengguna memanipulasi objek visual di layar secara langsung (seperti drag-and-drop). WIMP adalah singkatan dari Windows, Icons, Menus, Pointers, yaitu paradigma antarmuka grafis (GUI) standar.",
+    "key_facts": [
+      "Direct manipulation: manipulasi objek langsung (drag-drop)",
+      "WIMP: Windows, Icons, Menus, Pointers"
+    ],
+    "expected_behavior": "answer"
+  }
+]

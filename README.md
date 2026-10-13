@@ -31,12 +31,13 @@ Built with Streamlit but completely transformed via custom CSS injection:
 
 ## 🛠️ Technology Stack
 
-*   **Frontend:** Streamlit, Custom CSS (Glassmorphism), HTML Injection
-*   **Language Model:** Groq (LLaMA 3) / OpenAI API (Ultra-fast inference)
-*   **RAG Engine:** LangChain
-*   **Vector Database:** ChromaDB
-*   **Reranker:** Cohere API
-*   **Data Processing:** Pandas, NumPy, PyPDF2, docx2txt
+*   **Backend:** FastAPI & Streamlit
+*   **Language Model:** Groq / OpenAI-compatible API
+*   **Vector Database:** ChromaDB (with user & metadata isolation)
+*   **Retrieval:** Hybrid Search (Vector + BM25 + Weighted RRF)
+*   **Reranker:** Cohere Multilingual Reranker
+*   **Caching:** Exact & Semantic Caching (DiskCache + SentenceTransformers)
+*   **Evaluation:** Custom Retrieval Ablation Suite (`evaluate_rag.py`)
 
 ---
 
@@ -48,30 +49,58 @@ Built with Streamlit but completely transformed via custom CSS injection:
    cd ai-study-buddy
    ```
 
-2. **Install dependencies:**
+2. **Setup Virtual Environment & Install dependencies:**
    ```bash
+   python3 -m venv .venv
+   source .venv/bin/activate
    pip install -r requirements.txt
    ```
 
 3. **Set up Environment Variables:**
-   Create a `.env` file in the root directory and add your API Keys:
+   Create a `.env` file in the root directory:
    ```env
-   GROQ_API_KEY=your_groq_api_key
-   COHERE_API_KEY=your_cohere_api_key
+   OPENAI_API_KEY=your_llm_api_key
+   OPENAI_BASE_URL=https://api.groq.com/openai/v1
+   LLM_MODEL=openai/gpt-oss-120b
+   COHERE_API_KEY=your_cohere_api_key  # Optional
    ```
 
-4. **Run the Application:**
+4. **Run FastAPI Server:**
+   ```bash
+   uvicorn api:app --reload --port 8000
+   ```
+   * Access the interactive API docs at: `http://localhost:8000/docs`
+   * Access the Web UI at: `http://localhost:8000/`
+
+5. **Run Streamlit UI (Alternative):**
    ```bash
    streamlit run app.py
    ```
 
 ---
 
-## 📸 Screenshots
-*(Add your screenshots here)*
-- Dashboard & Chat Interface
-- Light / Dark Mode Toggle
-- Analytics & Document Library
+## 🧪 Testing & Evaluation
+
+1. **Run Regression & Quality Unit Tests:**
+   ```bash
+   python3 -m unittest discover tests
+   ```
+
+2. **Run Retrieval Ablation Study (Vector vs Hybrid Search):**
+   ```bash
+   python3 evaluate_rag.py --configs vector hybrid
+   ```
+
+3. **Run End-to-End Answer Quality & Citation Evaluation:**
+   ```bash
+   python3 evaluate_answers_comprehensive.py --dataset eval_dataset.json
+   ```
 
 ---
-*Built with passion for the future of personalized education.* 🎓
+
+## 🔒 Security & Data Isolation Architecture
+
+* **Session Isolation:** `SessionManager` provides in-memory conversation history scoping per `X-Session-ID` with TTL cleanup.
+* **Document Ownership:** Documents indexed in ChromaDB contain `user_id` metadata. Retrieval and document management are restricted per `X-User-ID`.
+* **Upload Limits:** Enforced 15 MB payload limit with streaming validation.
+* **Cache Invalidation:** Deleting a document automatically purges associated exact and semantic cache entries.

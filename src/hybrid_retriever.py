@@ -1,174 +1,390 @@
+
 """
 src/hybrid_retriever.py
-Module Hybrid Search: Vector (Chroma) + Keyword (BM25) + RRF
-Level 2 Part 3 - RAG Production
+
+Hybrid Search:
+- Chroma vector search
+- BM25 keyword search atas seluruh korpus yang sesuai filter
+- Weighted Reciprocal Rank Fusion (RRF)
+- Deduplication untuk chunk identik
+
+Output hybrid_retrieve tetap:
+(chunks, metadatas)
 """
-from typing import List, Tuple
+
+import re
+from typing import List, Tuple, Optional
+
 from rank_bm25 import BM25Okapi
+
 from src.indexer import collection
 
 
+# =========================================================
+# TOKENIZATION
+# =========================================================
+
 def tokenize(text: str) -> List[str]:
     """
-    Tokenize text simple: lowercase + split by whitespace.
-    Untuk produksi besar, pakai library tokenizer (nltk/spacy).
+    Tokenisasi sederhana untuk teks Indonesia dan istilah teknis.
+    Mempertahankan kata dan token seperti HCI, UX, dan angka.
     """
-    return text.lower().split()
+    if not text:
+        return []
 
+    return re.findall(
+        r"[a-zA-Z0-9]+(?:[-'][a-zA-Z0-9]+)*",
+        text.lower(),
+    )
+
+
+# =========================================================
+# BM25 SEARCH
+# =========================================================
 
 def bm25_search(
     query: str,
     documents: List[str],
-    top_k: int = 10
+    top_k: int = 10,
 ) -> List[Tuple[int, float]]:
     """
-    Keyword search dengan algoritma BM25.
-    
-    Args:
-        query: User question
-        documents: List of document texts
-        top_k: Berapa hasil diambil
-    
-    Returns:
-        List of (index, score) - sorted by score descending
+    Keyword search BM25.
+
+    Mengembalikan pasangan (index dokumen, skor),
+    diurutkan dari skor tertinggi. Dokumen dengan skor nol
+    tidak dimasukkan sebagai hasil keyword yang relevan.
     """
-    if not documents:
+    if not documents or top_k <= 0:
         return []
-    
-    # Tokenize semua docs
+
     tokenized_docs = [tokenize(doc) for doc in documents]
-    
-    # Setup BM25
-    bm25 = BM25Okapi(tokenized_docs)
-    
-    # Tokenize query
     tokenized_query = tokenize(query)
-    
-    # Get scores untuk semua docs
+
+    if not tokenized_query:
+        return []
+
+    bm25 = BM25Okapi(tokenized_docs)
     scores = bm25.get_scores(tokenized_query)
-    
-    # Sort by score, ambil top_k
-    indexed_scores = [(i, score) for i, score in enumerate(scores)]
-    indexed_scores.sort(key=lambda x: x[1], reverse=True)
-    
+
+    indexed_scores = [
+        (index, float(score))
+        for index, score in enumerate(scores)
+        if score > 0
+    ]
+
+    indexed_scores.sort(
+        key=lambda item: item[1],
+        reverse=True,
+    )
+
     return indexed_scores[:top_k]
 
 
-def reciprocal_rank_fusion(
-    vector_results: List[int],
-    bm25_results: List[int],
-    k: int = 60
-) -> List[Tuple[int, float]]:
-    """
-    Gabungkan hasil dari Vector & BM25 pakai algoritma RRF.
-    
-    RRF Score = sum(1 / (k + rank)) untuk setiap retriever
-    
-    Args:
-        vector_results: List of indices dari vector search (rank order)
-        bm25_results: List of indices dari BM25 (rank order)
-        k: Konstanta RRF (default 60 - industry standard)
-    
-    Returns:
-        List of (doc_index, rrf_score) sorted by score
-    """
-    scores = {}
-    
-    # Score dari vector results
-    for rank, doc_idx in enumerate(vector_results):
-        score = 1 / (k + rank + 1)  # +1 karena rank dimulai dari 1
-        scores[doc_idx] = scores.get(doc_idx, 0) + score
-    
-    # Score dari BM25 results
-    for rank, doc_idx in enumerate(bm25_results):
-        score = 1 / (k + rank + 1)
-        scores[doc_idx] = scores.get(doc_idx, 0) + score
-    
-    # Sort by combined score
-    sorted_results = sorted(scores.items(), key=lambda x: x[1], reverse=True)
-    
-    return sorted_results
+# =========================================================
+# WEIGHTED RECIPROCAL RANK FUSION
+# =========================================================
 
+def reciprocal_rank_fusion(
+    vector_results: List[str],
+    bm25_results: List[str],
+    k: int = 60,
+    vector_weight: float = 0.6,
+    bm25_weight: float = 0.4,
+) -> List[Tuple[str, float]]:
+    """
+    Gabungkan ranking vector dan BM25 menggunakan weighted RRF.
+
+    Input berupa ID dokumen dalam urutan ranking.
+    Output berupa (document_id, fused_score).
+    """
+    if k <= 0:
+        raise ValueError("Parameter k harus lebih besar dari 0.")
+
+    if vector_weight < 0 or bm25_weight < 0:
+        raise ValueError("Bobot tidak boleh negatif.")
+
+    if vector_weight == 0 and bm25_weight == 0:
+        raise ValueError("Minimal satu bobot harus lebih besar dari 0.")
+
+    scores = {}
+
+    for rank, document_id in enumerate(vector_results, start=1):
+        scores[document_id] = (
+            scores.get(document_id, 0.0)
+            + vector_weight / (k + rank)
+        )
+
+    for rank, document_id in enumerate(bm25_results, start=1):
+        scores[document_id] = (
+            scores.get(document_id, 0.0)
+            + bm25_weight / (k + rank)
+        )
+
+    return sorted(
+        scores.items(),
+        key=lambda item: item[1],
+        reverse=True,
+    )
+
+
+# =========================================================
+# METADATA FILTER
+# =========================================================
+
+def _get_corpus(where_filter: Optional[dict] = None):
+    """
+    Ambil dokumen dan metadata dari korpus Chroma.
+    Filter diterapkan pada kedua jalur pencarian.
+    """
+    if collection is None:
+        return [], [], []
+
+    kwargs = {
+        "include": ["documents", "metadatas"],
+    }
+
+    if where_filter:
+        kwargs["where"] = where_filter
+
+    result = collection.get(**kwargs)
+
+    ids = result.get("ids") or []
+    documents = result.get("documents") or []
+    metadatas = result.get("metadatas") or []
+
+    # Pastikan setiap dokumen mempunyai metadata.
+    if len(metadatas) < len(documents):
+        metadatas.extend(
+            [{} for _ in range(len(documents) - len(metadatas))]
+        )
+
+    # Abaikan dokumen kosong dan pertahankan pasangan ID,
+    # teks, serta metadata.
+    valid = []
+
+    for doc_id, document, metadata in zip(
+        ids,
+        documents,
+        metadatas,
+    ):
+        if document and str(document).strip():
+            valid.append(
+                (
+                    str(doc_id),
+                    str(document),
+                    dict(metadata or {}),
+                )
+            )
+
+    return (
+        [item[0] for item in valid],
+        [item[1] for item in valid],
+        [item[2] for item in valid],
+    )
+
+
+# =========================================================
+# HYBRID RETRIEVAL
+# =========================================================
 
 def hybrid_retrieve(
     question: str,
     top_k: int = 20,
-    where_filter: dict = None,
+    where_filter: Optional[dict] = None,
     vector_weight: float = 0.6,
-    bm25_weight: float = 0.4
+    bm25_weight: float = 0.4,
 ) -> Tuple[List[str], List[dict]]:
     """
-    Hybrid retrieval: Vector + BM25 + RRF merge.
-    
-    Args:
-        question: User question
-        top_k: Berapa final results
-        where_filter: Filter metadata (subject)
-        vector_weight: Weight untuk vector results (0-1)
-        bm25_weight: Weight untuk BM25 results (0-1)
-    
+    Hybrid retrieval dengan vector search dan BM25 independen.
+
+    Vector search mengambil kandidat berdasarkan embedding.
+    BM25 mencari kata kunci pada seluruh korpus yang memenuhi
+    filter metadata. Weighted RRF menggabungkan ranking keduanya.
+
     Returns:
-        Tuple (chunks, metadatas) - top_k hasil terbaik
+        Tuple berisi (chunks, metadatas), dengan urutan berpasangan.
     """
-    # ── STEP 1: VECTOR SEARCH (pakai existing Chroma collection) ──
-    query_args = {
-        "query_texts": [question],
-        "n_results": top_k * 2  # Ambil 2x lipat buat hybrid pool
-    }
-    if where_filter:
-        query_args["where"] = where_filter
-    
+    question = (question or "").strip()
+
+    if not question or top_k <= 0:
+        return [], []
+
+    if collection is None:
+        print("[Hybrid Search] Collection belum tersedia.")
+        return [], []
+
+    if vector_weight < 0 or bm25_weight < 0:
+        raise ValueError("Bobot retrieval tidak boleh negatif.")
+
+    if vector_weight == 0 and bm25_weight == 0:
+        raise ValueError("Minimal satu bobot harus lebih besar dari 0.")
+
+    # -----------------------------------------------------
+    # STEP 1: LOAD CORPUS
+    # -----------------------------------------------------
+
     try:
-        vector_results = collection.query(**query_args)
-        all_chunks = vector_results["documents"][0] if vector_results["documents"] else []
-        all_metadatas = vector_results["metadatas"][0] if vector_results["metadatas"] else []
-    except Exception as e:
-        print(f"⚠️ Vector search error: {e}")
+        corpus_ids, corpus_docs, corpus_metas = _get_corpus(
+            where_filter=where_filter,
+        )
+    except Exception as exc:
+        print(f"[Hybrid Search: corpus error] {exc}")
         return [], []
-    
-    if not all_chunks:
+
+    if not corpus_ids:
+        print("[Hybrid Search] Tidak ada dokumen yang cocok.")
         return [], []
-    
-    # Vector rank: index 0, 1, 2, ... (urutan return = ranking)
-    vector_ranks = list(range(len(all_chunks)))
-    
-    # ── STEP 2: BM25 SEARCH (di chunks yang udah di-filter Chroma) ──
-    bm25_results = bm25_search(question, all_chunks, top_k=len(all_chunks))
-    bm25_ranks = [idx for idx, _ in bm25_results]
-    
-    # ── STEP 3: MERGE PAKAI RRF ──
-    merged = reciprocal_rank_fusion(vector_ranks, bm25_ranks)
-    
-    # Ambil top_k dari merged result
-    top_indices = [idx for idx, _ in merged[:top_k]]
-    
-    # Build final results
-    final_chunks = [all_chunks[i] for i in top_indices]
-    final_metadatas = [all_metadatas[i] for i in top_indices]
-    
-    print(f"\n[🔀 Hybrid Search: Vector + BM25 → {len(final_chunks)} chunks]")
-    
+
+    id_to_index = {
+        doc_id: index
+        for index, doc_id in enumerate(corpus_ids)
+    }
+
+    # -----------------------------------------------------
+    # STEP 2: VECTOR SEARCH
+    # -----------------------------------------------------
+
+    vector_ranked_ids = []
+
+    try:
+        # Filter yang sama dipakai untuk vector search.
+        # Pool dibatasi agar tidak meminta lebih banyak hasil
+        # daripada jumlah dokumen yang tersedia.
+        pool_size = min(
+            len(corpus_ids),
+            max(top_k * 3, top_k),
+        )
+
+        query_args = {
+            "query_texts": [question],
+            "n_results": pool_size,
+        }
+
+        if where_filter:
+            query_args["where"] = where_filter
+
+        vector_result = collection.query(**query_args)
+
+        result_ids = (
+            vector_result.get("ids") or [[]]
+        )[0]
+
+        for doc_id in result_ids:
+            doc_id = str(doc_id)
+
+            if doc_id in id_to_index and doc_id not in vector_ranked_ids:
+                vector_ranked_ids.append(doc_id)
+
+    except Exception as exc:
+        print(f"[Hybrid Search: vector error] {exc}")
+
+    # -----------------------------------------------------
+    # STEP 3: BM25 SEARCH
+    # -----------------------------------------------------
+
+    bm25_ranked_ids = []
+
+    try:
+        bm25_results = bm25_search(
+            query=question,
+            documents=corpus_docs,
+            top_k=len(corpus_docs),
+        )
+
+        bm25_ranked_ids = [
+            corpus_ids[index]
+            for index, _score in bm25_results
+        ]
+
+    except Exception as exc:
+        print(f"[Hybrid Search: BM25 error] {exc}")
+
+    # -----------------------------------------------------
+    # STEP 4: WEIGHTED RRF
+    # -----------------------------------------------------
+
+    merged = reciprocal_rank_fusion(
+        vector_results=vector_ranked_ids,
+        bm25_results=bm25_ranked_ids,
+        k=60,
+        vector_weight=vector_weight,
+        bm25_weight=bm25_weight,
+    )
+
+    if not merged:
+        print("[Hybrid Search] Kedua jalur tidak menghasilkan kandidat.")
+        return [], []
+
+    # -----------------------------------------------------
+    # STEP 5: EXACT DEDUPLICATION
+    # -----------------------------------------------------
+
+    final_chunks = []
+    final_metadatas = []
+    seen_texts = set()
+
+    for doc_id, _score in merged:
+        index = id_to_index.get(doc_id)
+
+        if index is None:
+            continue
+
+        document = corpus_docs[index]
+        metadata = corpus_metas[index]
+
+        # Hanya buang teks yang identik.
+        # Chunk berbeda pada halaman yang sama tetap diperbolehkan.
+        normalized_text = " ".join(document.lower().split())
+
+        if normalized_text in seen_texts:
+            continue
+
+        seen_texts.add(normalized_text)
+        final_chunks.append(document)
+        final_metadatas.append(metadata)
+
+        if len(final_chunks) >= top_k:
+            break
+
+    print(
+        f"\n[Hybrid Search: Vector + BM25 + Weighted RRF "
+        f"→ {len(final_chunks)} chunks]"
+    )
+
     return final_chunks, final_metadatas
 
 
+# =========================================================
+# QUICK TEST
+# =========================================================
+
 def test_hybrid():
-    """Quick test hybrid retriever."""
-    query = "Apa rumus turunan x kuadrat?"
-    
-    print(f"\n🔍 Query: {query}\n")
-    
-    # Test hybrid
-    chunks, metas = hybrid_retrieve(
-        question=query,
-        top_k=5,
-        where_filter={"subject": "matematika"}
-    )
-    
-    print(f"📚 Hybrid Results ({len(chunks)} chunks):")
-    for i, (chunk, meta) in enumerate(zip(chunks, metas), 1):
-        snippet = chunk[:80] + "..." if len(chunk) > 80 else chunk
-        print(f"\n  [{i}] {snippet}")
-        print(f"      Source: {meta.get('filename', 'unknown')}, hal {meta.get('page_number', 'N/A')}")
+    """Uji retrieval dengan beberapa pertanyaan IMK."""
+    tests = [
+        "Apa pengertian IMK?",
+        "Apa tujuan IMK?",
+        "Apa itu usability?",
+    ]
+
+    for question in tests:
+        print(f"\n{'=' * 60}")
+        print(f"Pertanyaan: {question}")
+
+        chunks, metadatas = hybrid_retrieve(
+            question=question,
+            top_k=5,
+        )
+
+        for index, (chunk, metadata) in enumerate(
+            zip(chunks, metadatas),
+            start=1,
+        ):
+            print(
+                f"\n[{index}] "
+                f"Halaman {metadata.get('page_number', 'N/A')} | "
+                f"{metadata.get('filename', 'Unknown')}"
+            )
+            print(chunk[:400])
 
 
 if __name__ == "__main__":
