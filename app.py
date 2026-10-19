@@ -40,10 +40,14 @@ def set_page(page):
 st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200');
 
 *, *::before, *::after {
-    font-family: 'Inter', -apple-system, sans-serif !important;
     box-sizing: border-box;
+}
+
+html, body, .stApp, p, div, h1, h2, h3, h4, h5, h6, input, textarea {
+    font-family: 'Inter', -apple-system, sans-serif;
 }
 
 .stApp {
@@ -54,11 +58,33 @@ st.markdown("""
     min-height: 100vh;
 }
 
-#MainMenu, footer { visibility: hidden; }
-.stDeployButton { display: none !important; }
+/* Sembunyikan Fork GitHub, Deployment Button, dan Toolbar bawaan Streamlit Cloud */
+#MainMenu, 
+footer,
+[data-testid="stToolbar"],
+[data-testid="stToolbarActions"],
+.stDeployButton,
+.stForkButton,
+[data-testid="stDecoration"],
+[data-testid="stStatusWidget"],
+header [data-testid="stToolbar"],
+header [data-testid="stToolbarActions"],
+a[href*="github.com"] {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
+}
 
 header[data-testid="stHeader"] {
     background: transparent !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    border: none !important;
     z-index: 99 !important;
 }
 
@@ -391,26 +417,67 @@ header[data-testid="stHeader"] {
 /* Tablet & Mobile (<= 992px) */
 @media (max-width: 992px) {
     header[data-testid="stHeader"] {
-        visibility: visible !important;
-        height: auto !important;
-        min-height: 48px !important;
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        min-height: 0 !important;
     }
     [data-testid="stSidebarCollapsedControl"] {
         display: flex !important;
         visibility: visible !important;
-        background: rgba(13, 19, 34, 0.88) !important;
-        border: 1px solid rgba(0, 242, 255, 0.35) !important;
-        border-radius: 10px !important;
-        color: #00f2ff !important;
-        top: 8px !important;
-        left: 8px !important;
-        box-shadow: 0 0 14px rgba(0, 242, 255, 0.25) !important;
+        position: fixed !important;
+        top: 12px !important;
+        left: 12px !important;
         z-index: 999999 !important;
+    }
+    [data-testid="stSidebarCollapsedControl"] button {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        background: rgba(13, 19, 34, 0.9) !important;
+        border: 1px solid rgba(0, 242, 255, 0.45) !important;
+        border-radius: 10px !important;
+        width: 40px !important;
+        height: 40px !important;
+        min-width: 40px !important;
+        min-height: 40px !important;
+        padding: 0 !important;
+        box-shadow: 0 0 15px rgba(0, 242, 255, 0.3) !important;
+        cursor: pointer !important;
+    }
+    /* Sembunyikan teks ligature keyboard_double_arrow_right */
+    [data-testid="stSidebarCollapsedControl"] button span {
+        display: none !important;
+        font-size: 0 !important;
+        color: transparent !important;
+        width: 0 !important;
+        height: 0 !important;
+    }
+    /* Tampilkan icon menu hamburger neon modern ☰ */
+    [data-testid="stSidebarCollapsedControl"] button::after {
+        content: "☰" !important;
+        font-size: 20px !important;
+        color: #00f2ff !important;
+        line-height: 1 !important;
+        display: block !important;
     }
     [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] {
         display: flex !important;
         visibility: visible !important;
+    }
+    [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] button span {
+        display: none !important;
+        font-size: 0 !important;
+        color: transparent !important;
+        width: 0 !important;
+        height: 0 !important;
+    }
+    [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] button::after {
+        content: "✕" !important;
+        font-size: 18px !important;
         color: #00f2ff !important;
+        line-height: 1 !important;
+        display: block !important;
     }
     .main-title {
         font-size: 2.2rem !important;
@@ -525,9 +592,15 @@ if st.session_state.theme_mode == "Light":
     [data-testid="stChatMessage"]:has(.is-user) [data-testid="stChatMessageContent"] { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.1); color: #0f172a; }
     [data-testid="stChatMessage"]:has(.is-ai) [data-testid="stChatMessageContent"] { background: linear-gradient(135deg, rgba(0,242,255,0.15), rgba(112,0,255,0.15)); border-color: rgba(0,242,255,0.4); color: #0f172a; }
     @media (max-width: 992px) {
-        [data-testid="stSidebarCollapsedControl"] {
+        [data-testid="stSidebarCollapsedControl"] button {
             background: rgba(241, 245, 249, 0.95) !important;
-            border-color: rgba(0, 0, 0, 0.15) !important;
+            border-color: rgba(0, 0, 0, 0.2) !important;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1) !important;
+        }
+        [data-testid="stSidebarCollapsedControl"] button::after {
+            color: #0f172a !important;
+        }
+        [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] button::after {
             color: #0f172a !important;
         }
     }
