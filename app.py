@@ -58,18 +58,28 @@ st.markdown("""
 .stDeployButton { display: none !important; }
 
 header[data-testid="stHeader"] {
-    visibility: hidden !important;
-    height: 0 !important;
-    min-height: 0 !important;
+    background: transparent !important;
+    z-index: 99 !important;
 }
 
-[data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"],
-[data-testid="stSidebarCollapsedControl"] { display: none !important; }
+/* Sembunyikan header default hanya di layar desktop */
+@media (min-width: 993px) {
+    header[data-testid="stHeader"] {
+        visibility: hidden !important;
+        height: 0 !important;
+        min-height: 0 !important;
+    }
+    [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"],
+    [data-testid="stSidebarCollapsedControl"] { 
+        display: none !important; 
+    }
+}
 
 [data-testid="stSidebar"] {
     width: 280px !important;
-    min-width: 280px !important;
-    background: rgba(13, 19, 34, 0.8) !important;
+    min-width: 260px !important;
+    max-width: 85vw !important;
+    background: rgba(13, 19, 34, 0.85) !important;
     backdrop-filter: blur(24px) !important;
     -webkit-backdrop-filter: blur(24px) !important;
     border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
@@ -376,6 +386,107 @@ header[data-testid="stHeader"] {
     text-align: center;
 }
 
+/* ================= RESPONSIVE MEDIA QUERIES (TABLET & HP) ================= */
+
+/* Tablet & Mobile (<= 992px) */
+@media (max-width: 992px) {
+    header[data-testid="stHeader"] {
+        visibility: visible !important;
+        height: auto !important;
+        min-height: 48px !important;
+    }
+    [data-testid="stSidebarCollapsedControl"] {
+        display: flex !important;
+        visibility: visible !important;
+        background: rgba(13, 19, 34, 0.88) !important;
+        border: 1px solid rgba(0, 242, 255, 0.35) !important;
+        border-radius: 10px !important;
+        color: #00f2ff !important;
+        top: 8px !important;
+        left: 8px !important;
+        box-shadow: 0 0 14px rgba(0, 242, 255, 0.25) !important;
+        z-index: 999999 !important;
+    }
+    [data-testid="stSidebar"] [data-testid="stSidebarCollapseButton"] {
+        display: flex !important;
+        visibility: visible !important;
+        color: #00f2ff !important;
+    }
+    .main-title {
+        font-size: 2.2rem !important;
+    }
+    .main-hdr {
+        padding: 28px 24px !important;
+    }
+    .sc {
+        margin-bottom: 12px;
+    }
+}
+
+/* Smartphone / HP (<= 640px) */
+@media (max-width: 640px) {
+    html, body, .stApp {
+        overflow-x: hidden !important;
+        width: 100% !important;
+    }
+    .main-title {
+        font-size: 1.55rem !important;
+        line-height: 1.25 !important;
+    }
+    .main-sub {
+        font-size: 0.85rem !important;
+        line-height: 1.5 !important;
+    }
+    .main-hdr {
+        padding: 20px 14px !important;
+        margin-bottom: 16px !important;
+        border-radius: 12px !important;
+    }
+    .hero-icon-wrapper {
+        width: 48px !important;
+        height: 48px !important;
+        font-size: 1.5rem !important;
+        margin-bottom: 12px !important;
+    }
+    .sc {
+        padding: 12px !important;
+        border-radius: 10px !important;
+        margin-bottom: 8px !important;
+    }
+    .sc-n {
+        font-size: 1.35rem !important;
+    }
+    .sc-l {
+        font-size: 0.58rem !important;
+    }
+    .doc-card {
+        padding: 10px 12px !important;
+    }
+    .doc-name {
+        font-size: 0.8rem !important;
+        word-break: break-word !important;
+    }
+    [data-testid="stChatMessage"] {
+        max-width: 100% !important;
+        padding-left: 0 !important;
+        padding-right: 0 !important;
+    }
+    [data-testid="stChatMessageContent"] {
+        max-width: 90% !important;
+        word-break: break-word !important;
+        overflow-wrap: anywhere !important;
+        font-size: 0.9rem !important;
+        padding: 10px 12px !important;
+    }
+    [data-testid="stChatInputContainer"] {
+        padding: 4px 8px !important;
+        border-radius: 12px !important;
+    }
+    .txt-theme {
+        font-size: 1.15rem !important;
+    }
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -413,6 +524,13 @@ if st.session_state.theme_mode == "Light":
     [data-testid="stFileUploaderDropzone"] button::after { color: #0f172a !important; }
     [data-testid="stChatMessage"]:has(.is-user) [data-testid="stChatMessageContent"] { background: rgba(255,255,255,0.9); border-color: rgba(0,0,0,0.1); color: #0f172a; }
     [data-testid="stChatMessage"]:has(.is-ai) [data-testid="stChatMessageContent"] { background: linear-gradient(135deg, rgba(0,242,255,0.15), rgba(112,0,255,0.15)); border-color: rgba(0,242,255,0.4); color: #0f172a; }
+    @media (max-width: 992px) {
+        [data-testid="stSidebarCollapsedControl"] {
+            background: rgba(241, 245, 249, 0.95) !important;
+            border-color: rgba(0, 0, 0, 0.15) !important;
+            color: #0f172a !important;
+        }
+    }
     </style>
     """, unsafe_allow_html=True)
 
