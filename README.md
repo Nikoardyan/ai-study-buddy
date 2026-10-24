@@ -65,6 +65,11 @@ Built with Streamlit but completely transformed via custom CSS injection:
    COHERE_API_KEY=your_cohere_api_key  # Optional
    ```
 
+   Untuk deployment publik, salin `.env.example` dan set `AUTH_TOKENS_JSON`
+   serta `CORS_ALLOWED_ORIGINS`. Ketika `AUTH_TOKENS_JSON` terisi, API hanya
+   menerima `Authorization: Bearer <token>` dan user ID diambil dari token,
+   bukan dari header yang dikirim klien.
+
 4. **Run FastAPI Server:**
    ```bash
    uvicorn api:app --reload --port 8000
@@ -83,7 +88,7 @@ Built with Streamlit but completely transformed via custom CSS injection:
 
 1. **Run Regression & Quality Unit Tests:**
    ```bash
-   python3 -m unittest discover tests
+   python -m pytest -v
    ```
 
 2. **Run Retrieval Ablation Study (Vector vs Hybrid Search):**
@@ -100,7 +105,7 @@ Built with Streamlit but completely transformed via custom CSS injection:
 
 ## 🔒 Security & Data Isolation Architecture
 
-* **Session Isolation:** `SessionManager` provides in-memory conversation history scoping per `X-Session-ID` with TTL cleanup.
-* **Document Ownership:** Documents indexed in ChromaDB contain `user_id` metadata. Retrieval and document management are restricted per `X-User-ID`.
+* **Session Isolation:** `SessionManager` scopes conversation history by user and `X-Session-ID`, with TTL cleanup. A session owned by one user cannot be read or cleared by another identity.
+* **Document Ownership:** Documents indexed in ChromaDB contain `user_id` metadata. Retrieval and document management are restricted per authenticated identity. `X-User-ID` is demo-only; public deployments must set `AUTH_TOKENS_JSON`.
 * **Upload Limits:** Enforced 15 MB payload limit with streaming validation.
 * **Cache Invalidation:** Deleting a document automatically purges associated exact and semantic cache entries.

@@ -3,6 +3,7 @@
 Config untuk AI Study Buddy - Edutech RAG
 """
 
+import json
 import os
 from dotenv import load_dotenv
 
@@ -20,6 +21,42 @@ LLM_MODEL = os.getenv(
     "LLM_MODEL",
     "openai/gpt-oss-120b"
 )
+
+
+def _load_auth_tokens() -> dict[str, str]:
+    """Load optional bearer-token to user-id mappings for deployed APIs."""
+    raw_tokens = os.getenv("AUTH_TOKENS_JSON", "").strip()
+    if not raw_tokens:
+        return {}
+
+    try:
+        tokens = json.loads(raw_tokens)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError("AUTH_TOKENS_JSON harus berupa JSON object yang valid.") from exc
+
+    if (
+        not isinstance(tokens, dict)
+        or not all(isinstance(token, str) and isinstance(user_id, str)
+                   for token, user_id in tokens.items())
+    ):
+        raise RuntimeError("AUTH_TOKENS_JSON harus memetakan bearer token ke user_id.")
+
+    return tokens
+
+
+# Kosong untuk mode demo lokal. Pada deployment publik, set token di environment
+# dan API akan mengambil user_id dari bearer token, bukan header X-User-ID.
+AUTH_TOKENS = _load_auth_tokens()
+
+# Jangan membuka CORS ke semua origin secara default. Origin tambahan dipisahkan koma.
+CORS_ALLOWED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv(
+        "CORS_ALLOWED_ORIGINS",
+        "http://localhost:8000,http://127.0.0.1:8000",
+    ).split(",")
+    if origin.strip()
+]
 
 # PROJECT CONFIG
 COLLECTION_NAME = "ai_study_buddy"

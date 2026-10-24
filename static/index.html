@@ -714,6 +714,44 @@
         let selectedFile = null;
         let isStreaming = false;
 
+        // Browser identity untuk mode demo lokal. Backend tetap memvalidasi formatnya.
+        // Pada deployment publik, gunakan bearer token yang dikonfigurasi di server.
+        function storedId(key, prefix) {
+            let value = localStorage.getItem(key);
+            if (!value) {
+                const suffix = window.crypto?.randomUUID?.() || Math.random().toString(36).slice(2);
+                value = `${prefix}-${suffix}`;
+                localStorage.setItem(key, value);
+            }
+            return value;
+        }
+
+        const userId = storedId('ai-study-buddy-user-id', 'user');
+        const sessionId = storedId('ai-study-buddy-session-id', 'session');
+
+        function apiHeaders(extra = {}) {
+            return {
+                'X-User-ID': userId,
+                'X-Session-ID': sessionId,
+                ...extra,
+            };
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        function formatMessage(content) {
+            return escapeHtml(content)
+                .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
+                .replace(/`(.*?)`/g, '<code style="background:#f0f0f0;padding:1px 4px;border-radius:3px;font-family:monospace">$1</code>');
+        }
+
         // ============ INIT ============
         window.onload = () => {
             checkApiStatus();
@@ -725,7 +763,7 @@
         async function checkApiStatus() {
             try {
                 // Pakai /api/status bukan /
-                const res = await fetch(`${API_URL}/api/status`);
+                const res = await fetch(`${API_URL}/api/status`, { headers: apiHeaders() });
                 const data = await res.json();
 
                 document.getElementById('apiStatus').textContent = 'Online';
@@ -764,6 +802,7 @@
             try {
                 const res = await fetch(`${API_URL}/upload`, {
                     method: 'POST',
+                    headers: apiHeaders(),
                     body: formData
                 });
                 const data = await res.json();
@@ -812,7 +851,7 @@
         // ============ DOCUMENTS ============
         async function loadDocuments() {
             try {
-                const res = await fetch(`${API_URL}/documents`);
+                const res = await fetch(`${API_URL}/documents`, { headers: apiHeaders() });
                 const data = await res.json();
                 const docList = document.getElementById('docList');
                 const mobCount = document.getElementById('mobileDocCount');
@@ -828,10 +867,10 @@
                 docList.innerHTML = data.documents.map(doc => `
                 <div class="doc-item">
                     <div class="doc-item-info">
-                        <div class="doc-name" title="${doc.filename}">📄 ${doc.filename}</div>
-                        <div class="doc-subject">${doc.subject} · ${doc.total_pages} hal</div>
+                        <div class="doc-name" title="${escapeHtml(doc.filename)}">📄 ${escapeHtml(doc.filename)}</div>
+                        <div class="doc-subject">${escapeHtml(doc.subject)} · ${escapeHtml(doc.total_pages)} hal</div>
                     </div>
-                    <button class="doc-delete" onclick="deleteDocument('${doc.filename}')" title="Hapus">×</button>
+                    <button class="doc-delete" data-filename="${escapeHtml(doc.filename)}" onclick="deleteDocument(this.dataset.filename)" title="Hapus">×</button>
                 </div>
             `).join('');
             } catch (err) {
@@ -843,7 +882,8 @@
             if (!confirm(`Hapus ${filename}?`)) return;
             try {
                 const res = await fetch(`${API_URL}/documents/${encodeURIComponent(filename)}`, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    headers: apiHeaders(),
                 });
                 if (res.ok) {
                     showToast(`🗑 ${filename} dihapus`, 'info');
@@ -886,8 +926,8 @@
             try {
                 const res = await fetch(`${API_URL}/chat/stream`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ question })
+                    headers: apiHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ question, session_id: sessionId })
                 });
 
                 if (!res.ok) throw new Error('API error');
@@ -920,7 +960,7 @@
             const id = 'msg-' + Date.now();
             const bubble = isTyping
                 ? `<div class="typing"><span></span><span></span><span></span></div>`
-                : `<div class="message-bubble">${content}</div>`;
+                : `<div class="message-bubble">${formatMessage(content)}</div>`;
             const avatar = role === 'ai' ? '🎓' : '👤';
 
             messages.innerHTML += `
@@ -936,9 +976,7 @@
         function updateMessage(id, content) {
             const msg = document.getElementById(id);
             if (msg) {
-                const formatted = content
-                    .replace(/\*\*(.*?)\*\*/g, '<b>$1</b>')
-                    .replace(/`(.*?)`/g, '<code style="background:#f0f0f0;padding:1px 4px;border-radius:3px;font-family:monospace">$1</code>');
+                const formatted = formatMessage(content);
                 msg.querySelector('div:last-child').outerHTML =
                     `<div class="message-bubble">${formatted}</div>`;
             }
@@ -946,7 +984,7 @@
 
         async function clearHistory() {
             try {
-                await fetch(`${API_URL}/chat/clear`, { method: 'DELETE' });
+                await fetch(`${API_URL}/chat/clear`, { method: 'DELETE', headers: apiHeaders() });
                 document.getElementById('chatMessages').innerHTML = `
                 <div class="message ai">
                     <div class="message-avatar">🎓</div>

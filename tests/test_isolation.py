@@ -5,6 +5,7 @@ Jalankan:
 """
 
 import unittest
+from unittest.mock import patch
 from fastapi.testclient import TestClient
 from api import app, session_manager
 from src.memory import SessionManager
@@ -103,6 +104,60 @@ class TestIsolation(unittest.TestCase):
 
         # Cleanup
         collection.delete(where={"filename": "doc_x_private.txt"})
+
+    def test_rejects_unsafe_identifiers(self):
+        """ID dari header tidak boleh menjadi path traversal atau metadata liar."""
+        unsafe_user = self.client.get(
+            "/documents",
+            headers={"X-User-ID": "../../outside"},
+        )
+        self.assertEqual(unsafe_user.status_code, 400)
+
+        unsafe_session = self.client.get(
+            "/api/status",
+            headers={"X-Session-ID": "../../other-session"},
+        )
+        self.assertEqual(unsafe_session.status_code, 400)
+
+    def test_session_cannot_be_read_or_cleared_by_another_user(self):
+        """Sesi yang sudah terikat ke user A tidak dapat dipakai oleh user B."""
+        session_id = "owned-session-1"
+        owner_headers = {
+            "X-User-ID": "owner-alpha",
+            "X-Session-ID": session_id,
+        }
+        other_headers = {
+            "X-User-ID": "owner-beta",
+            "X-Session-ID": session_id,
+        }
+
+        created = self.client.get("/api/status", headers=owner_headers)
+        self.assertEqual(created.status_code, 200)
+
+        history = self.client.get("/chat/history", headers=other_headers)
+        self.assertEqual(history.status_code, 404)
+
+        clear = self.client.delete("/chat/clear", headers=other_headers)
+        self.assertEqual(clear.status_code, 404)
+
+        owner_clear = self.client.delete("/chat/clear", headers=owner_headers)
+        self.assertEqual(owner_clear.status_code, 200)
+
+    def test_bearer_token_identity_overrides_user_header(self):
+        """Pada mode deploy, user ID harus berasal dari bearer token, bukan header."""
+        with patch("api.AUTH_TOKENS", {"secret-test-token": "token-user"}):
+            no_token = self.client.get("/documents")
+            self.assertEqual(no_token.status_code, 401)
+
+            response = self.client.get(
+                "/documents",
+                headers={
+                    "Authorization": "Bearer secret-test-token",
+                    "X-User-ID": "spoofed-user",
+                },
+            )
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response.json()["user_id"], "token-user")
 
 
 if __name__ == "__main__":

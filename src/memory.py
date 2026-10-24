@@ -1,4 +1,5 @@
 import time
+from threading import RLock
 from typing import Dict, Optional
 
 
@@ -85,26 +86,50 @@ class SessionManager:
         self.ttl_seconds = ttl_seconds
         self.max_turns = max_turns
         self._sessions: Dict[str, ChatHistory] = {}
+        self._owners: Dict[str, str] = {}
+        self._lock = RLock()
 
-    def get_session(self, session_id: str) -> ChatHistory:
-        """Ambil atau buat sesi percakapan untuk session_id tertentu."""
-        self._cleanup()
-        if session_id not in self._sessions:
-            self._sessions[session_id] = ChatHistory(max_turns=self.max_turns)
-        session = self._sessions[session_id]
-        session.last_accessed = time.time()
-        return session
+    def get_session(
+        self,
+        session_id: str,
+        owner_id: Optional[str] = None,
+    ) -> ChatHistory:
+        """Ambil sesi dan pastikan sesi hanya digunakan pemilik yang sama."""
+        with self._lock:
+            self._cleanup()
+            stored_owner = self._owners.get(session_id)
 
-    def clear_session(self, session_id: str) -> bool:
-        """Hapus riwayat sesi tertentu."""
-        if session_id in self._sessions:
-            del self._sessions[session_id]
-            return True
-        return False
+            if stored_owner and owner_id and stored_owner != owner_id:
+                raise PermissionError("Session bukan milik user ini.")
+
+            if session_id not in self._sessions:
+                self._sessions[session_id] = ChatHistory(max_turns=self.max_turns)
+
+            # Sesi lama yang belum memiliki owner (misalnya state dari versi lama)
+            # akan diklaim oleh user pertama yang mengaksesnya.
+            if owner_id and not stored_owner:
+                self._owners[session_id] = owner_id
+
+            session = self._sessions[session_id]
+            session.last_accessed = time.time()
+            return session
+
+    def clear_session(self, session_id: str, owner_id: Optional[str] = None) -> bool:
+        """Hapus riwayat sesi; pemilik lain tidak boleh menghapusnya."""
+        with self._lock:
+            stored_owner = self._owners.get(session_id)
+            if stored_owner and owner_id and stored_owner != owner_id:
+                raise PermissionError("Session bukan milik user ini.")
+            if session_id in self._sessions:
+                del self._sessions[session_id]
+                self._owners.pop(session_id, None)
+                return True
+            return False
 
     def session_exists(self, session_id: str) -> bool:
         """Periksa apakah session_id aktif."""
-        return session_id in self._sessions
+        with self._lock:
+            return session_id in self._sessions
 
     def _cleanup(self):
         """Bersihkan sesi yang tidak aktif melewati batas TTL."""
@@ -115,7 +140,9 @@ class SessionManager:
         ]
         for sid in expired:
             del self._sessions[sid]
+            self._owners.pop(sid, None)
 
     @property
     def active_session_count(self) -> int:
-        return len(self._sessions)
+        with self._lock:
+            return len(self._sessions)
